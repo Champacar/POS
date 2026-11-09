@@ -1161,7 +1161,7 @@ async function testCashDrawer() {
 <?php if (!empty($message)): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    showToast('<?= $message ?>', '<?= $messageType ?>');
+    showToast(<?= json_encode($message) ?>, <?= json_encode($messageType) ?>);
 });
 </script>
 <?php endif; ?>

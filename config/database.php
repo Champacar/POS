@@ -237,19 +237,55 @@ function getDB() {
 
                 // Auto-migration for MySQL missing columns
                 try {
-                    $saleCols = array_column($pdo->query("SHOW COLUMNS FROM `sales`")->fetchAll(), 'Field');
-                    if (!empty($saleCols)) {
-                        if (!in_array('synced', $saleCols, true)) {
-                            $pdo->exec("ALTER TABLE `sales` ADD COLUMN `synced` TINYINT(1) NOT NULL DEFAULT 0 AFTER `created_at`");
-                        }
-                        if (!in_array('cash_amount', $saleCols, true)) {
-                            $pdo->exec("ALTER TABLE `sales` ADD COLUMN `cash_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00 AFTER `note`");
-                        }
-                        if (!in_array('transfer_amount', $saleCols, true)) {
-                            $pdo->exec("ALTER TABLE `sales` ADD COLUMN `transfer_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00 AFTER `cash_amount`");
+                    // 1. Auto-migrate shop_settings columns
+                    $shopCols = array_column($pdo->query("SHOW COLUMNS FROM `shop_settings`")->fetchAll(), 'Field');
+                    if (!empty($shopCols)) {
+                        $missingShopCols = [
+                            'email' => "VARCHAR(100) DEFAULT ''",
+                            'footer_image' => "VARCHAR(255) DEFAULT NULL",
+                            'qr_code' => "VARCHAR(255) DEFAULT NULL",
+                            'cfd_media' => "VARCHAR(255) DEFAULT NULL",
+                            'enable_multi_currency' => "TINYINT(1) DEFAULT 1",
+                            'exchange_rate_thb' => "DECIMAL(12,2) DEFAULT 680.00",
+                            'exchange_rate_usd' => "DECIMAL(12,2) DEFAULT 22000.00",
+                            'enable_cash_drawer' => "TINYINT(1) DEFAULT 1",
+                            'cash_drawer_mode' => "VARCHAR(20) DEFAULT 'driver'",
+                            'enable_dynamic_qr' => "TINYINT(1) DEFAULT 0",
+                            'bank_name' => "VARCHAR(100) DEFAULT 'BCEL One'",
+                            'bank_account_number' => "VARCHAR(50) DEFAULT ''",
+                            'bank_account_name' => "VARCHAR(100) DEFAULT ''",
+                            'qr_payload' => "TEXT NULL",
+                            'qr_mode' => "VARCHAR(20) DEFAULT 'auto'",
+                            'qr_uri_scheme' => "TINYINT(1) DEFAULT 0",
+                        ];
+                        foreach ($missingShopCols as $col => $def) {
+                            if (!in_array($col, $shopCols, true)) {
+                                $pdo->exec("ALTER TABLE `shop_settings` ADD COLUMN `{$col}` {$def}");
+                            }
                         }
                     }
 
+                    // 2. Auto-migrate sales columns
+                    $saleCols = array_column($pdo->query("SHOW COLUMNS FROM `sales`")->fetchAll(), 'Field');
+                    if (!empty($saleCols)) {
+                        $missingSaleCols = [
+                            'synced' => "TINYINT(1) NOT NULL DEFAULT 0",
+                            'cash_amount' => "DECIMAL(15,2) NOT NULL DEFAULT 0.00",
+                            'transfer_amount' => "DECIMAL(15,2) NOT NULL DEFAULT 0.00",
+                            'currency' => "VARCHAR(10) DEFAULT 'LAK'",
+                            'exchange_rate' => "DECIMAL(12,2) DEFAULT 1.00",
+                            'paid_amount_foreign' => "DECIMAL(12,2) DEFAULT 0.00",
+                            'change_amount_foreign' => "DECIMAL(12,2) DEFAULT 0.00",
+                            'change_amount' => "DECIMAL(15,2) DEFAULT 0.00",
+                        ];
+                        foreach ($missingSaleCols as $col => $def) {
+                            if (!in_array($col, $saleCols, true)) {
+                                $pdo->exec("ALTER TABLE `sales` ADD COLUMN `{$col}` {$def}");
+                            }
+                        }
+                    }
+
+                    // 3. Auto-migrate expenses columns
                     $expCols = array_column($pdo->query("SHOW COLUMNS FROM `expenses`")->fetchAll(), 'Field');
                     if (!empty($expCols)) {
                         if (!in_array('uuid', $expCols, true)) {
@@ -260,9 +296,20 @@ function getDB() {
                         }
                     }
 
+                    // 4. Auto-migrate stock_history columns
                     $stockHistCols = array_column($pdo->query("SHOW COLUMNS FROM `stock_history`")->fetchAll(), 'Field');
                     if (!empty($stockHistCols) && !in_array('supplier_id', $stockHistCols, true)) {
                         $pdo->exec("ALTER TABLE `stock_history` ADD COLUMN `supplier_id` INT(11) DEFAULT NULL AFTER `user_id`");
+                    }
+
+                    // 5. Auto-create migration tables if missing (product_barcodes, units, suppliers, templates)
+                    $hasBarcodes = $pdo->query("SHOW TABLES LIKE 'product_barcodes'")->fetch();
+                    if (!$hasBarcodes) {
+                        $migFile = __DIR__ . '/../database/migrate.sql';
+                        if (file_exists($migFile)) {
+                            $migSql = file_get_contents($migFile);
+                            $pdo->exec($migSql);
+                        }
                     }
                 } catch (Throwable $migrationErr) {
                     error_log("MySQL Auto-migration note: " . $migrationErr->getMessage());
