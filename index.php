@@ -133,7 +133,7 @@ include 'includes/sidebar.php';
                     <strong style="color:#bf360c;">ແຈ້ງເຕືອນຄວາມປອດໄພ:</strong> ບັນຊີ Admin ຍັງຄົງໃຊ້ລະຫັດຜ່ານເລີ່ມຕົ້ນ (password). ກະລຸນາປ່ຽນລະຫັດຜ່ານທັນທີເພື່ອຄວາມປອດໄພຂອງລະບົບ.
                 </div>
             </div>
-            <a href="staff.php" class="btn btn-sm" style="background:#e65100; color:#fff; border-radius:8px; font-weight:600;"><i class="fas fa-key"></i> ປ່ຽນລະຫັດຜ່ານດຽວນີ້</a>
+            <a href="profile.php#security" class="btn btn-sm" style="background:#e65100; color:#fff; border-radius:8px; font-weight:600;"><i class="fas fa-key"></i> ປ່ຽນລະຫັດຜ່ານດຽວນີ້</a>
         </div>
         <?php endif; ?>
         <!-- Stats Grid -->

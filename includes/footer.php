@@ -11,7 +11,17 @@ $footerShopNameEn = $settings['shop_name_en'] ?? 'POINT OF SALE';
             </div>
             <div class="app-footer-right">
                 <?php if (!empty($_SESSION['full_name'])): ?>
-                    <span class="footer-user"><i class="fas fa-user-circle"></i> <?= htmlspecialchars($_SESSION['full_name']) ?> (<?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'user')) ?>)</span>
+                    <a href="<?= BASE_URL ?>profile.php" class="footer-user" title="ແກ້ໄຂໂປຣໄຟລ" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                        <?php 
+                        $footerAvatar = getUserAvatarUrl($_SESSION['avatar'] ?? null);
+                        if ($footerAvatar): 
+                        ?>
+                            <img src="<?= $footerAvatar ?>?v=<?= time() ?>" alt="Avatar" style="width:18px; height:18px; border-radius:50%; object-fit:cover;">
+                        <?php else: ?>
+                            <i class="fas fa-user-circle"></i>
+                        <?php endif; ?>
+                        <span><?= htmlspecialchars($_SESSION['full_name']) ?> (<?= htmlspecialchars(ucfirst($_SESSION['role'] ?? 'user')) ?>)</span>
+                    </a>
                     <span class="footer-divider">|</span>
                 <?php endif; ?>
                 <span class="footer-version"><i class="fas fa-code-branch"></i> v1.0.0</span>

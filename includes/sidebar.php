@@ -196,6 +196,19 @@ try {
             </button>
         </div>
         <div class="nav-item">
+            <a href="<?= BASE_URL ?>profile.php" class="nav-link <?= isActivePage('profile') ?>" title="ໂປຣໄຟລຂອງຂ້ອຍ">
+                <?php 
+                $sidebarAvatarUrl = getUserAvatarUrl($_SESSION['avatar'] ?? null);
+                if ($sidebarAvatarUrl): 
+                ?>
+                    <img src="<?= $sidebarAvatarUrl ?>?v=<?= time() ?>" alt="Avatar" style="width:20px; height:20px; border-radius:50%; object-fit:cover; margin-right:4px;">
+                <?php else: ?>
+                    <i class="fas fa-user-circle"></i>
+                <?php endif; ?>
+                <span>ໂປຣໄຟລຂອງຂ້ອຍ</span>
+            </a>
+        </div>
+        <div class="nav-item">
             <a href="<?= BASE_URL ?>logout.php" class="nav-link" title="ອອກລະບົບ">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>ອອກລະບົບ</span>

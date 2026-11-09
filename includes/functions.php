@@ -381,6 +381,20 @@ function getRoleBadgeClass($role) {
 }
 
 /**
+ * Get URL to user avatar or null if not set / not found
+ */
+function getUserAvatarUrl($avatarName = null) {
+    if (!empty($avatarName)) {
+        $cleanName = basename($avatarName);
+        $avatarPath = __DIR__ . '/../assets/images/avatars/' . $cleanName;
+        if (file_exists($avatarPath)) {
+            return BASE_URL . 'assets/images/avatars/' . htmlspecialchars($cleanName);
+        }
+    }
+    return null;
+}
+
+/**
  * Safe error message for API responses (hide details in production)
  */
 function safeErrorMessage($exception) {

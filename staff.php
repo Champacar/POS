@@ -70,7 +70,26 @@ include 'includes/sidebar.php';
                         <?php foreach ($staff as $i => $s): ?>
                         <tr>
                             <td><?= $i + 1 ?></td>
-                            <td><strong><?= sanitize($s['full_name']) ?></strong></td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <?php 
+                                    $stAvatar = getUserAvatarUrl($s['avatar'] ?? null);
+                                    if ($stAvatar): 
+                                    ?>
+                                        <img src="<?= $stAvatar ?>?v=<?= time() ?>" alt="Avatar" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1px solid #e2e8f0; flex-shrink:0;">
+                                    <?php else: ?>
+                                        <div style="width:34px; height:34px; border-radius:50%; background:#e8f5e9; color:#2e7d32; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; border:1px solid #c8e6c9; flex-shrink:0;">
+                                            <?= mb_substr($s['full_name'], 0, 1) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div>
+                                        <strong><?= sanitize($s['full_name']) ?></strong>
+                                        <?php if (!empty($s['email'])): ?>
+                                            <div style="font-size:0.75rem; color:var(--text-medium);"><?= sanitize($s['email']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </td>
                             <td><?= sanitize($s['username']) ?></td>
                             <td>
                                 <?php
@@ -120,6 +139,27 @@ include 'includes/sidebar.php';
         <div class="modal-body">
             <form id="staffForm" onsubmit="saveStaff(event)">
                 <input type="hidden" id="staffId" value="">
+                <input type="hidden" id="removeStaffAvatarFlag" value="0">
+                
+                <!-- Avatar Upload Section in Modal -->
+                <div style="text-align:center; margin-bottom:18px;">
+                    <div style="position:relative; width:80px; height:80px; margin:0 auto 8px; border-radius:50%; border:3px solid #e2e8f0; overflow:hidden; background:#f1f5f9; cursor:pointer;" onclick="document.getElementById('staffAvatarInput').click()" title="ກົດເພື່ອເລືອກຮູບ">
+                        <img id="staffAvatarPreview" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                        <div id="staffAvatarPlaceholder" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:26px;">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <input type="file" id="staffAvatarInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;" onchange="previewStaffAvatar(this)">
+                    <div style="display:flex; justify-content:center; gap:6px;">
+                        <button type="button" class="btn btn-sm btn-white" style="font-size:0.75rem; padding:3px 10px;" onclick="document.getElementById('staffAvatarInput').click()">
+                            <i class="fas fa-upload text-primary"></i> ເລືອກຮູບ
+                        </button>
+                        <button type="button" class="btn btn-sm btn-white text-danger" id="clearStaffAvatarBtn" style="font-size:0.75rem; padding:3px 10px; display:none;" onclick="clearStaffAvatar()">
+                            <i class="fas fa-times"></i> ລຶບຮູບ
+                        </button>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">ຊື່-ນາມສະກຸນ *</label>
                     <input type="text" class="form-control" id="staffName" required placeholder="ຊື່ ແລະ ນາມສະກຸນ" oninput="this.classList.remove('is-invalid')">
@@ -150,6 +190,10 @@ include 'includes/sidebar.php';
                 <div class="form-group">
                     <label class="form-label">ເບີໂທ</label>
                     <input type="text" class="form-control" id="staffPhone" placeholder="020 xxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ອີເມວ</label>
+                    <input type="email" class="form-control" id="staffEmail" placeholder="example@mail.com">
                 </div>
                 <div class="form-group" id="statusGroup" style="display:none;">
                     <label class="form-label">ສະຖານະ</label>
@@ -289,9 +333,35 @@ function resetRolePermissions() {
     showToast('ຄືນຄ່າສິດທິຕາມບົດບາດແລ້ວ', 'info');
 }
 
+function previewStaffAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('staffAvatarPreview').src = e.target.result;
+        document.getElementById('staffAvatarPreview').style.display = 'block';
+        document.getElementById('staffAvatarPlaceholder').style.display = 'none';
+        document.getElementById('clearStaffAvatarBtn').style.display = 'inline-block';
+        document.getElementById('removeStaffAvatarFlag').value = '0';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearStaffAvatar() {
+    document.getElementById('staffAvatarInput').value = '';
+    document.getElementById('staffAvatarPreview').src = '';
+    document.getElementById('staffAvatarPreview').style.display = 'none';
+    document.getElementById('staffAvatarPlaceholder').style.display = 'flex';
+    document.getElementById('clearStaffAvatarBtn').style.display = 'none';
+    document.getElementById('removeStaffAvatarFlag').value = '1';
+}
+
 function openAddStaffModal() {
     document.getElementById('staffId').value = '';
     document.getElementById('staffForm').reset();
+    clearStaffAvatar();
+    document.getElementById('removeStaffAvatarFlag').value = '0';
+    document.getElementById('staffEmail').value = '';
     document.getElementById('staffPassword').required = true;
     document.getElementById('pwdHelp').style.display = 'none';
     document.getElementById('statusGroup').style.display = 'none';
@@ -334,21 +404,29 @@ async function saveStaff(e) {
         return;
     }
     
-    const data = {
-        full_name: fullName,
-        username: username,
-        role: document.getElementById('staffRole').value,
-        phone: document.getElementById('staffPhone').value,
-        permissions: getPermissionsFromUI()
-    };
+    const formData = new FormData();
+    formData.append('full_name', fullName);
+    formData.append('username', username);
+    formData.append('role', document.getElementById('staffRole').value);
+    formData.append('phone', document.getElementById('staffPhone').value);
+    formData.append('email', document.getElementById('staffEmail').value);
+    formData.append('permissions', JSON.stringify(getPermissionsFromUI()));
+
+    const avatarFile = document.getElementById('staffAvatarInput').files[0];
+    if (avatarFile) {
+        formData.append('avatar', avatarFile);
+    }
+    if (document.getElementById('removeStaffAvatarFlag').value === '1') {
+        formData.append('remove_avatar', '1');
+    }
     
     if (password) {
-        data.password = password;
+        formData.append('password', password);
     }
     
     if (id) {
-        data.id = parseInt(id);
-        data.is_active = parseInt(document.getElementById('staffStatus').value);
+        formData.append('id', id);
+        formData.append('is_active', document.getElementById('staffStatus').value);
     }
     
     const btn = document.getElementById('saveStaffBtn');
@@ -358,7 +436,7 @@ async function saveStaff(e) {
     try {
         const result = await fetchAPI(`${BASE_URL}api/users.php`, {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: formData,
         });
         
         if (result.success) {
@@ -410,8 +488,24 @@ async function editStaff(id) {
             document.getElementById('pwdHelp').style.display = 'inline';
             document.getElementById('staffRole').value = u.role;
             document.getElementById('staffPhone').value = u.phone || '';
+            document.getElementById('staffEmail').value = u.email || '';
             document.getElementById('staffStatus').value = u.is_active;
             document.getElementById('statusGroup').style.display = '';
+
+            // Handle Avatar in modal
+            document.getElementById('staffAvatarInput').value = '';
+            document.getElementById('removeStaffAvatarFlag').value = '0';
+            if (u.avatar_url) {
+                document.getElementById('staffAvatarPreview').src = u.avatar_url;
+                document.getElementById('staffAvatarPreview').style.display = 'block';
+                document.getElementById('staffAvatarPlaceholder').style.display = 'none';
+                document.getElementById('clearStaffAvatarBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('staffAvatarPreview').src = '';
+                document.getElementById('staffAvatarPreview').style.display = 'none';
+                document.getElementById('staffAvatarPlaceholder').style.display = 'flex';
+                document.getElementById('clearStaffAvatarBtn').style.display = 'none';
+            }
 
             // Populate permissions
             const userPerms = u.permissions || ROLE_DEFAULTS[u.role] || ROLE_DEFAULTS.cashier;

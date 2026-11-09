@@ -168,6 +168,22 @@ function getDB() {
                     }
                 } else {
                     // Auto-migration for existing SQLite databases missing columns
+                    $userCols = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(), 'name');
+                    if (!empty($userCols)) {
+                        if (!in_array('avatar', $userCols, true)) {
+                            $pdo->exec("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL");
+                        }
+                        if (!in_array('email', $userCols, true)) {
+                            $pdo->exec("ALTER TABLE users ADD COLUMN email TEXT DEFAULT NULL");
+                        }
+                        if (!in_array('phone', $userCols, true)) {
+                            $pdo->exec("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT NULL");
+                        }
+                        if (!in_array('permissions', $userCols, true)) {
+                            $pdo->exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL");
+                        }
+                    }
+
                     $supCols = array_column($pdo->query("PRAGMA table_info(suppliers)")->fetchAll(), 'name');
                     if (!empty($supCols) && !in_array('note', $supCols, true)) {
                         $pdo->exec("ALTER TABLE suppliers ADD COLUMN note TEXT");
@@ -251,12 +267,21 @@ function getDB() {
 
                 // Auto-migration for MySQL missing columns
                 try {
-                    // 1. Auto-migrate users table (role ENUM & permissions)
+                    // 1. Auto-migrate users table (role ENUM, permissions, phone, email, avatar)
                     try {
                         $userCols = array_column($pdo->query("SHOW COLUMNS FROM `users`")->fetchAll(), 'Field');
                         if (!empty($userCols)) {
                             if (!in_array('permissions', $userCols, true)) {
                                 $pdo->exec("ALTER TABLE `users` ADD COLUMN `permissions` TEXT NULL AFTER `role`");
+                            }
+                            if (!in_array('phone', $userCols, true)) {
+                                $pdo->exec("ALTER TABLE `users` ADD COLUMN `phone` VARCHAR(50) NULL AFTER `role`");
+                            }
+                            if (!in_array('email', $userCols, true)) {
+                                $pdo->exec("ALTER TABLE `users` ADD COLUMN `email` VARCHAR(100) NULL AFTER `phone`");
+                            }
+                            if (!in_array('avatar', $userCols, true)) {
+                                $pdo->exec("ALTER TABLE `users` ADD COLUMN `avatar` VARCHAR(255) NULL AFTER `email`");
                             }
                             $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin','cashier','manager','developer','pharmacist') NOT NULL DEFAULT 'cashier'");
                         }
