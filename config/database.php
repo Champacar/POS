@@ -302,13 +302,28 @@ function getDB() {
                         $pdo->exec("ALTER TABLE `stock_history` ADD COLUMN `supplier_id` INT(11) DEFAULT NULL AFTER `user_id`");
                     }
 
-                    // 5. Auto-create migration tables if missing (product_barcodes, units, suppliers, templates)
+                    // 5. Auto-run comprehensive migration if any core table or column is missing
+                    $hasShifts = $pdo->query("SHOW TABLES LIKE 'shifts'")->fetch();
+                    $userCols = array_column($pdo->query("SHOW COLUMNS FROM `users`")->fetchAll(), 'Field');
+                    $hasPermissions = in_array('permissions', $userCols, true);
                     $hasBarcodes = $pdo->query("SHOW TABLES LIKE 'product_barcodes'")->fetch();
-                    if (!$hasBarcodes) {
+                    $hasStockAudits = $pdo->query("SHOW TABLES LIKE 'stock_audits'")->fetch();
+
+                    if (!$hasShifts || !$hasPermissions || !$hasBarcodes || !$hasStockAudits) {
                         $migFile = __DIR__ . '/../database/migrate.sql';
                         if (file_exists($migFile)) {
-                            $migSql = file_get_contents($migFile);
-                            $pdo->exec($migSql);
+                            $rawSql = file_get_contents($migFile);
+                            $cleanSql = preg_replace('/--[^\n]*\n/', "\n", $rawSql);
+                            $queries = array_filter(array_map('trim', explode(';', $cleanSql)));
+                            foreach ($queries as $q) {
+                                if (!empty($q)) {
+                                    try {
+                                        $pdo->exec($q);
+                                    } catch (Throwable $t) {
+                                        // Ignore already existing column / table errors
+                                    }
+                                }
+                            }
                         }
                     }
                 } catch (Throwable $migrationErr) {
