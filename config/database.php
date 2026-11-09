@@ -216,7 +216,24 @@ function getDB() {
                     $dbOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
                 }
 
+                $dbOptions[PDO::MYSQL_ATTR_MULTI_STATEMENTS] = true;
                 $pdo = new PDO($dsn, DB_USER, DB_PASS, $dbOptions);
+
+                // Auto-seed if tables do not exist in MySQL (Zero manual import needed)
+                try {
+                    $hasUsers = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
+                    if (!$hasUsers) {
+                        $schemaFile = __DIR__ . '/../database/pospharma.sql';
+                        if (file_exists($schemaFile)) {
+                            $sql = file_get_contents($schemaFile);
+                            $sql = preg_replace('/CREATE\s+DATABASE[^\n;]+;?/i', '', $sql);
+                            $sql = preg_replace('/USE\s+[^\n;]+;?/i', '', $sql);
+                            $pdo->exec($sql);
+                        }
+                    }
+                } catch (Throwable $seedErr) {
+                    error_log("MySQL Auto-seed note: " . $seedErr->getMessage());
+                }
 
                 // Auto-migration for MySQL missing columns
                 try {
