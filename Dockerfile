@@ -38,7 +38,7 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set proper permissions for web server and uploads
-RUN mkdir -p /var/www/html/logs /var/www/html/assets/images \
+RUN mkdir -p /var/www/html/logs /var/www/html/assets/images /var/www/html/assets/images/avatars \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 777 /var/www/html/assets/images /var/www/html/logs
