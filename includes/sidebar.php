@@ -183,6 +183,12 @@ try {
             </a>
         </div>
         <?php endif; ?>
+        <div class="nav-item" id="pwaInstallItem">
+            <button type="button" class="nav-link pwa-install-btn" id="pwaInstallBtn" onclick="installPWA()" title="ຕິດຕັ້ງແອັບ (Install PWA)" style="display:none; width:100%; border:none; background:transparent; cursor:pointer; text-align:left; color:var(--primary); font-weight:600;">
+                <i class="fas fa-download" style="color:var(--primary);"></i>
+                <span>ຕິດຕັ້ງແອັບ (Install)</span>
+            </button>
+        </div>
         <div class="nav-item">
             <a href="<?= BASE_URL ?>logout.php" class="nav-link" title="ອອກລະບົບ">
                 <i class="fas fa-sign-out-alt"></i>

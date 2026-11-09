@@ -51,6 +51,18 @@ if (!isset($pageTitle)) {
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css?v=<?= time() ?>">
     
+    <!-- PWA Web App Manifest & Mobile Meta -->
+    <link rel="manifest" href="<?= BASE_URL ?>manifest.json">
+    <meta name="theme-color" content="#2e7d32">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($shopName) ?>">
+    <link rel="apple-touch-icon" href="<?= BASE_URL ?>assets/icons/apple-touch-icon.png">
+    
+    <!-- PWA Client Helper -->
+    <script src="<?= BASE_URL ?>assets/js/pwa.js" defer></script>
+    
     <!-- CSRF Token for AJAX -->
     <meta name="csrf-token" content="<?= htmlspecialchars(generateCSRFToken()) ?>">
     

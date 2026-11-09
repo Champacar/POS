@@ -32,6 +32,29 @@ ServerSignature Off
     </IfModule>
 </FilesMatch>
 
+# Allow PWA manifest
+<Files "manifest.json">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Allow from all
+    </IfModule>
+</Files>
+
+# Service Worker headers (prevent caching of sw.js itself)
+<Files "sw.js">
+    <IfModule mod_headers.c>
+        Header set Service-Worker-Allowed "/"
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </IfModule>
+</Files>
+
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
 # Block access to hidden files (.git, .env, etc.)
 <IfModule mod_rewrite.c>
     RewriteEngine On
