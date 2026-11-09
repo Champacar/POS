@@ -72,7 +72,7 @@ if ($netBeforeTax > 0 && $taxAmount > 0) {
 }
 
 $companyName = !empty($settings['company_name']) ? $settings['company_name'] : ($settings['shop_name'] ?? 'ຮ້ານຂາຍຢາດີ');
-$shopTaxId = !empty($settings['tax_id']) ? $settings['tax_id'] : '01-00294821';
+$shopTaxId = !empty($settings['tax_id']) ? $settings['tax_id'] : '-';
 $taxInvNo = !empty($sale['tax_invoice_number']) ? $sale['tax_invoice_number'] : ('TAX-' . date('Ymd', strtotime($sale['created_at'])) . '-' . str_pad($sale['id'], 4, '0', STR_PAD_LEFT));
 ?>
 <!DOCTYPE html>

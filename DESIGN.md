@@ -16,9 +16,10 @@
 
 ### Semantic & Status Colors
 - **Success (`--success`):** `#2e7d32` (Surface: `#e8f5e9`, Border: `#c8e6c9`)
-- **Warning (`--warning`):** `#b26a00` (Surface: `#fff8e1`, Border: `#ffe082` - ປ້າຍເຕືອນໃກ້ໝົດອາຍຸ ຜ່ານເກນ WCAG AA)
+- **Warning (`--warning`):** `#935100` (Surface: `#fff3e0`, Border: `#ffe082` - ປ້າຍເຕືອນໃກ້ໝົດອາຍຸ Contrast 5.78:1 ຜ່ານເກນ WCAG AA)
 - **Danger (`--danger`):** `#d32f2f` (Surface: `#ffebee`, Border: `#ffcdd2` - ສິນຄ້າໝົດອາຍຸ, ປຸ່ມລຶບ)
 - **Info (`--info`):** `#0277bd` (Surface: `#e1f5fe`, Border: `#b3e5fc`)
+- **Accent Coral (`--accent-coral`):** `#e57373` (Surface: `#ffebee` - ຍອດເງິນໂອນ, ແຈ້ງເຕືອນດ່ວນ)
 
 ### Neutral & Text Colors (ຜ່ານເກນ WCAG AA 4.5:1)
 - **Text Primary (`--text-dark`):** `#263238` (Blue Grey 900 - ຫົວຂໍ້, ຂໍ້ຄວາມຫຼັກ - Contrast > 12:1)

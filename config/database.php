@@ -192,10 +192,30 @@ function getDB() {
                     $shopCols = array_column($pdo->query("PRAGMA table_info(shop_settings)")->fetchAll(), 'name');
                     if (!empty($shopCols)) {
                         $missingShopCols = [
+                            'company_name' => "TEXT DEFAULT ''",
+                            'tax_id' => "TEXT DEFAULT ''",
+                            'tax_invoice_prefix' => "TEXT DEFAULT 'TAX-'",
+                            'open_time' => "TEXT DEFAULT '08:00'",
+                            'close_time' => "TEXT DEFAULT '20:00'",
+                            'show_in_receipt' => "INTEGER DEFAULT 1",
+                            'receipt_size' => "TEXT DEFAULT '80mm'",
+                            'tax_type' => "TEXT DEFAULT 'excluded'",
                             'email' => "TEXT DEFAULT ''",
                             'footer_image' => "TEXT DEFAULT ''",
                             'qr_code' => "TEXT DEFAULT ''",
                             'cfd_media' => "TEXT DEFAULT ''",
+                            'enable_multi_currency' => "INTEGER DEFAULT 1",
+                            'exchange_rate_thb' => "REAL DEFAULT 680.00",
+                            'exchange_rate_usd' => "REAL DEFAULT 22000.00",
+                            'enable_cash_drawer' => "INTEGER DEFAULT 1",
+                            'cash_drawer_mode' => "TEXT DEFAULT 'driver'",
+                            'enable_dynamic_qr' => "INTEGER DEFAULT 0",
+                            'bank_name' => "TEXT DEFAULT 'BCEL One'",
+                            'bank_account_number' => "TEXT DEFAULT ''",
+                            'bank_account_name' => "TEXT DEFAULT ''",
+                            'qr_payload' => "TEXT DEFAULT NULL",
+                            'qr_mode' => "TEXT DEFAULT 'auto'",
+                            'qr_uri_scheme' => "INTEGER DEFAULT 0",
                         ];
                         foreach ($missingShopCols as $col => $def) {
                             if (!in_array($col, $shopCols, true)) {
@@ -215,9 +235,102 @@ function getDB() {
                     }
 
                     $saleCols = array_column($pdo->query("PRAGMA table_info(sales)")->fetchAll(), 'name');
-                    if (!empty($saleCols) && !in_array('synced', $saleCols, true)) {
-                        $pdo->exec("ALTER TABLE sales ADD COLUMN synced INTEGER NOT NULL DEFAULT 0");
+                    if (!empty($saleCols)) {
+                        $missingSaleCols = [
+                            'shift_id' => "INTEGER DEFAULT NULL",
+                            'synced' => "INTEGER NOT NULL DEFAULT 0",
+                            'cash_amount' => "REAL NOT NULL DEFAULT 0.00",
+                            'transfer_amount' => "REAL NOT NULL DEFAULT 0.00",
+                            'currency' => "TEXT DEFAULT 'LAK'",
+                            'exchange_rate' => "REAL DEFAULT 1.00",
+                            'paid_amount_foreign' => "REAL DEFAULT 0.00",
+                            'change_amount_foreign' => "REAL DEFAULT 0.00",
+                            'change_amount' => "REAL DEFAULT 0.00",
+                            'tax_invoice_number' => "TEXT DEFAULT NULL",
+                            'customer_tax_id' => "TEXT DEFAULT NULL",
+                            'customer_company' => "TEXT DEFAULT NULL",
+                            'customer_address' => "TEXT DEFAULT NULL",
+                            'is_tax_invoice' => "INTEGER DEFAULT 0",
+                        ];
+                        foreach ($missingSaleCols as $col => $def) {
+                            if (!in_array($col, $saleCols, true)) {
+                                $pdo->exec("ALTER TABLE sales ADD COLUMN {$col} {$def}");
+                            }
+                        }
                     }
+
+                    $saleItemCols = array_column($pdo->query("PRAGMA table_info(sale_items)")->fetchAll(), 'name');
+                    if (!empty($saleItemCols) && !in_array('cost_price', $saleItemCols, true)) {
+                        $pdo->exec("ALTER TABLE sale_items ADD COLUMN cost_price REAL DEFAULT 0.00");
+                    }
+
+                    $prodCols = array_column($pdo->query("PRAGMA table_info(products)")->fetchAll(), 'name');
+                    if (!empty($prodCols) && !in_array('supplier_id', $prodCols, true)) {
+                        $pdo->exec("ALTER TABLE products ADD COLUMN supplier_id INTEGER DEFAULT NULL");
+                    }
+
+                    // Auto-create shifts in SQLite
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS shifts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        shift_number TEXT NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        opened_at DATETIME NOT NULL,
+                        closed_at DATETIME DEFAULT NULL,
+                        starting_cash REAL DEFAULT 0.00,
+                        total_sales_amount REAL DEFAULT 0.00,
+                        total_cash_amount REAL DEFAULT 0.00,
+                        total_transfer_amount REAL DEFAULT 0.00,
+                        total_credit_amount REAL DEFAULT 0.00,
+                        total_bills INTEGER DEFAULT 0,
+                        total_discount REAL DEFAULT 0.00,
+                        cash_counted_lak REAL DEFAULT 0.00,
+                        cash_counted_thb REAL DEFAULT 0.00,
+                        cash_counted_usd REAL DEFAULT 0.00,
+                        expected_cash_lak REAL DEFAULT 0.00,
+                        difference_lak REAL DEFAULT 0.00,
+                        status TEXT DEFAULT 'open',
+                        note TEXT DEFAULT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
+                    )");
+                    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_shifts_user ON shifts(user_id)");
+                    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_shifts_status ON shifts(status)");
+
+                    // Auto-create stock_audits in SQLite
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS stock_audits (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        audit_code TEXT NOT NULL UNIQUE,
+                        title TEXT NOT NULL,
+                        status TEXT DEFAULT 'in_progress',
+                        total_items INTEGER DEFAULT 0,
+                        matched_items INTEGER DEFAULT 0,
+                        discrepancy_items INTEGER DEFAULT 0,
+                        total_cost_variance REAL DEFAULT 0.00,
+                        created_by INTEGER,
+                        reconciled_by INTEGER NULL,
+                        reconciled_at DATETIME NULL,
+                        note TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )");
+
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS stock_audit_items (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        audit_id INTEGER NOT NULL,
+                        product_id INTEGER NOT NULL,
+                        barcode TEXT DEFAULT '',
+                        product_name TEXT NOT NULL,
+                        unit TEXT DEFAULT 'ແຜງ',
+                        system_quantity INTEGER DEFAULT 0,
+                        counted_quantity INTEGER DEFAULT 0,
+                        variance INTEGER DEFAULT 0,
+                        cost_price REAL DEFAULT 0.00,
+                        cost_variance REAL DEFAULT 0.00,
+                        scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (audit_id) REFERENCES stock_audits(id) ON DELETE CASCADE,
+                        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+                    )");
+                    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_stock_audit_items_audit ON stock_audit_items(audit_id)");
+                    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_stock_audit_items_product ON stock_audit_items(product_id)");
 
                     // Auto-create user_activity_logs in SQLite
                     $pdo->exec("CREATE TABLE IF NOT EXISTS user_activity_logs (

@@ -319,6 +319,26 @@ function confirmDelete(message = 'ທ່ານແນ່ໃຈບໍ່ວ່າ�
     });
 }
 
+window.showActionLoading = function(title = 'ກຳລັງດຳເນີນການ...') {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+};
+
+window.hideActionLoading = function() {
+    if (typeof Swal !== 'undefined' && Swal.isVisible() && Swal.isLoading()) {
+        Swal.close();
+    }
+};
+
 // ===================================================
 // Search Filter
 // ===================================================

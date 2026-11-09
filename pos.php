@@ -92,7 +92,7 @@ window.onerror = function(msg, url, line) {
             <h1 class="page-title">ໜ້າຂາຍ</h1>
             <p style="font-size:0.85rem;color:var(--text-medium);margin-top:2px;">ລະບົບຂາຍຢາໜ້າຮ້ານ, ຕັດສະຕ໋ອກດ່ວນ ແລະ ຄິດໄລ່ເງິນ (Point of Sale)</p>
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <!-- Shift Status Button -->
             <button type="button" class="btn btn-outline btn-sm" id="btnShiftStatus" onclick="handleShiftButtonClick()" style="border-color:#ffab00; color:#b76e00; font-weight:600; min-height:36px;" title="ຈັດການກະຂາຍ">
                 <i class="fas fa-clock"></i> <span id="shiftStatusText">ກວດສອບກະ...</span>
@@ -172,7 +172,7 @@ window.onerror = function(msg, url, line) {
                             <?php if ($isExpired): ?>
                                 <div class="product-card-stock-danger" style="position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;z-index:2;box-shadow:0 2px 6px rgba(211,47,47,0.35);">ໝົດອາຍຸ</div>
                             <?php elseif ($isExpiringSoon): ?>
-                                <div style="position:absolute;top:8px;right:8px;background:#ff8b00;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:700;z-index:2;box-shadow:0 2px 6px rgba(255,139,0,0.35);" title="ໝົດອາຍຸໃນ <?= $daysLeft ?> ວັນ">ໝົດອາຍຸ <?= $daysLeft ?>ວ</div>
+                                <div style="position:absolute;top:8px;right:8px;background:#fff3e0;color:#935100;border:1px solid #ffe082;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;z-index:2;box-shadow:0 2px 6px rgba(147,81,0,0.15);" title="ໝົດອາຍຸໃນ <?= $daysLeft ?> ວັນ">ໝົດອາຍຸ <?= $daysLeft ?>ວ</div>
                             <?php elseif ($product['stock_quantity'] > 0 && $product['stock_quantity'] <= $product['min_stock']): ?>
                                 <div class="product-card-stock-warning">ໃກ້ໝົດ</div>
                             <?php endif; ?>

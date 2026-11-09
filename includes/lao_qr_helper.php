@@ -197,7 +197,7 @@ if (!function_exists('generateLaoQrPayload')) {
     ): string {
         $cleanAcc = preg_replace('/[^0-9]/', '', trim($account));
         if (empty($cleanAcc)) {
-            $cleanAcc = '02059935897';
+            throw new InvalidArgumentException('ກະລຸນາລະບຸເລກບັນຊີທະນາຄານໃນໜ້າຕັ້ງຄ່າຮ້ານກ່ອນ (Bank account number required)');
         }
 
         // Format international mobile if phone number
@@ -292,12 +292,21 @@ if (!function_exists('getDynamicLaoQrSvg')) {
             $stmt = $db->query("SELECT shop_name, shop_name_en, enable_dynamic_qr, bank_name, bank_account_number, bank_account_name, qr_code, qr_payload, qr_mode, qr_uri_scheme FROM shop_settings WHERE id = 1 LIMIT 1");
             $settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-            $account = !empty($settings['bank_account_number']) ? $settings['bank_account_number'] : '02059935897';
-            $merchant = !empty($settings['bank_account_name']) ? $settings['bank_account_name'] : (!empty($settings['shop_name_en']) ? $settings['shop_name_en'] : (!empty($settings['shop_name']) ? $settings['shop_name'] : 'Thipdara Pharmacy'));
+            $account = !empty($settings['bank_account_number']) ? trim($settings['bank_account_number']) : '';
+            $merchant = !empty($settings['bank_account_name']) ? $settings['bank_account_name'] : (!empty($settings['shop_name_en']) ? $settings['shop_name_en'] : (!empty($settings['shop_name']) ? $settings['shop_name'] : 'PHARMACY'));
             $bank = !empty($settings['bank_name']) ? $settings['bank_name'] : 'BCEL One';
             $qrPayload = !empty($settings['qr_payload']) ? trim($settings['qr_payload']) : '';
             $qrMode = !empty($settings['qr_mode']) ? $settings['qr_mode'] : 'auto';
             $useUriScheme = !empty($settings['qr_uri_scheme']);
+
+            if (empty($account) && empty($qrPayload)) {
+                return [
+                    'success' => false,
+                    'error' => 'ກະລຸນາຕັ້ງຄ່າເລກບັນຊີທະນາຄານໃນໜ້າຕັ້ງຄ່າຮ້ານກ່ອນ',
+                    'payload' => '',
+                    'svg' => ''
+                ];
+            }
 
             $payload = '';
             $generationMethod = 'generated';

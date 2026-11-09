@@ -127,6 +127,17 @@ CREATE TABLE IF NOT EXISTS `sales` (
   `note` TEXT,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `synced` INTEGER NOT NULL DEFAULT 0,
+  `shift_id` INTEGER DEFAULT NULL,
+  `currency` TEXT DEFAULT 'LAK',
+  `exchange_rate` REAL DEFAULT 1.00,
+  `paid_amount_foreign` REAL DEFAULT 0.00,
+  `change_amount_foreign` REAL DEFAULT 0.00,
+  `change_amount` REAL DEFAULT 0.00,
+  `tax_invoice_number` TEXT DEFAULT NULL,
+  `customer_tax_id` TEXT DEFAULT NULL,
+  `customer_company` TEXT DEFAULT NULL,
+  `customer_address` TEXT DEFAULT NULL,
+  `is_tax_invoice` INTEGER DEFAULT 0,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 
@@ -240,4 +251,61 @@ CREATE TABLE IF NOT EXISTS `stock_history` (
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
   FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS `shifts` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `shift_number` TEXT NOT NULL,
+  `user_id` INTEGER NOT NULL,
+  `opened_at` DATETIME NOT NULL,
+  `closed_at` DATETIME DEFAULT NULL,
+  `starting_cash` REAL DEFAULT 0.00,
+  `total_sales_amount` REAL DEFAULT 0.00,
+  `total_cash_amount` REAL DEFAULT 0.00,
+  `total_transfer_amount` REAL DEFAULT 0.00,
+  `total_credit_amount` REAL DEFAULT 0.00,
+  `total_bills` INTEGER DEFAULT 0,
+  `total_discount` REAL DEFAULT 0.00,
+  `cash_counted_lak` REAL DEFAULT 0.00,
+  `cash_counted_thb` REAL DEFAULT 0.00,
+  `cash_counted_usd` REAL DEFAULT 0.00,
+  `expected_cash_lak` REAL DEFAULT 0.00,
+  `difference_lak` REAL DEFAULT 0.00,
+  `status` TEXT DEFAULT 'open',
+  `note` TEXT DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS `stock_audits` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `audit_code` TEXT NOT NULL UNIQUE,
+  `title` TEXT NOT NULL,
+  `status` TEXT DEFAULT 'in_progress',
+  `total_items` INTEGER DEFAULT 0,
+  `matched_items` INTEGER DEFAULT 0,
+  `discrepancy_items` INTEGER DEFAULT 0,
+  `total_cost_variance` REAL DEFAULT 0.00,
+  `created_by` INTEGER,
+  `reconciled_by` INTEGER NULL,
+  `reconciled_at` DATETIME NULL,
+  `note` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `stock_audit_items` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `audit_id` INTEGER NOT NULL,
+  `product_id` INTEGER NOT NULL,
+  `barcode` TEXT DEFAULT '',
+  `product_name` TEXT NOT NULL,
+  `unit` TEXT DEFAULT 'ແຜງ',
+  `system_quantity` INTEGER DEFAULT 0,
+  `counted_quantity` INTEGER DEFAULT 0,
+  `variance` INTEGER DEFAULT 0,
+  `cost_price` REAL DEFAULT 0.00,
+  `cost_variance` REAL DEFAULT 0.00,
+  `scanned_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`audit_id`) REFERENCES `stock_audits`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 );

@@ -90,6 +90,9 @@ ServerSignature Off
     # Block direct access to scratch directory
     RewriteRule ^scratch/ - [F,L]
     
+    # Block direct access to scripts directory
+    RewriteRule ^scripts/ - [F,L]
+    
     # Block direct access to logs directory
     RewriteRule ^logs/ - [F,L]
 </IfModule>

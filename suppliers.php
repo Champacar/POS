@@ -208,12 +208,12 @@ async function saveSupplier(e) {
 
 async function deleteSupplier(id) {
     if (!await confirmDelete('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຜູ້ສະໜອງນີ້?')) return;
-    
+    if (window.showActionLoading) window.showActionLoading('ກຳລັງລຶບຜູ້ສະໜອງ...');
     try {
         const result = await fetchAPI(`${BASE_URL}api/suppliers.php?id=${id}`, {
             method: 'DELETE'
         });
-        
+        if (window.hideActionLoading) window.hideActionLoading();
         if (result.success) {
             showToast('ລຶບຜູ້ສະໜອງສຳເລັດ', 'success');
             setTimeout(() => window.location.reload(), 1000);
@@ -221,6 +221,7 @@ async function deleteSupplier(id) {
             showToast(result.message || 'ເກີດຂໍ້ຜິດພາດ', 'error');
         }
     } catch (error) {
+        if (window.hideActionLoading) window.hideActionLoading();
         showToast('ເກີດຂໍ້ຜິດພາດໃນການລຶບ', 'error');
     }
 }

@@ -459,11 +459,12 @@ async function deleteStaff(id) {
         return;
     }
     if (!await confirmDelete('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບພະນັກງານນີ້?')) return;
-    
+    if (window.showActionLoading) window.showActionLoading('ກຳລັງລຶບພະນັກງານ...');
     try {
         const result = await fetchAPI(`${BASE_URL}api/users.php?id=${id}`, {
             method: 'DELETE',
         });
+        if (window.hideActionLoading) window.hideActionLoading();
         if (result.success) {
             showToast('ລຶບພະນັກງານສຳເລັດ', 'success');
             setTimeout(() => window.location.reload(), 1000);
@@ -471,6 +472,7 @@ async function deleteStaff(id) {
             showToast(result.message || 'ເກີດຂໍ້ຜິດພາດ', 'error');
         }
     } catch (error) {
+        if (window.hideActionLoading) window.hideActionLoading();
         showToast('ເກີດຂໍ້ຜິດພາດ', 'error');
     }
 }

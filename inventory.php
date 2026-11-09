@@ -114,10 +114,10 @@ include 'includes/sidebar.php';
             <button type="button" class="tab" onclick="switchTab('batch-list')" id="tab-batch-list">
                 <i class="fas fa-layer-group"></i> ລາຍການ Lot/Batch ຢາ
             </button>
-            <button type="button" class="tab" onclick="switchTab('auto-reorder')" id="tab-auto-reorder" style="border-color:#0052cc; color:#0052cc; font-weight:700;">
+            <button type="button" class="tab" onclick="switchTab('auto-reorder')" id="tab-auto-reorder">
                 <i class="fas fa-bolt" style="color:#ffab00; margin-right:4px;"></i> ແນະນຳສັ່ງຊື້ຢາ (Auto Reorder)
             </button>
-            <button type="button" class="tab" onclick="switchTab('stock-audit')" id="tab-stock-audit" style="border-color:#16a34a; color:#16a34a; font-weight:700;">
+            <button type="button" class="tab" onclick="switchTab('stock-audit')" id="tab-stock-audit">
                 <i class="fas fa-clipboard-check" style="margin-right:4px;"></i> ກວດນັບສະຕ໋ອກ (Stock Audit)
             </button>
         </div>

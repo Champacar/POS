@@ -23,7 +23,7 @@ if (!isset($pageTitle)) {
 <html lang="lo">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="<?= htmlspecialchars($shopName) ?> - ລະບົບຂາຍໜ້າຮ້ານ ແລະ ບໍລິຫານສາງຢາ (Point of Sale System)">
     <title><?php 
         if (!empty($pageTitle) && $pageTitle !== $shopName) {

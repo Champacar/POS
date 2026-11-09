@@ -391,12 +391,12 @@ async function receivePO(poId) {
 
 async function deletePO(poId) {
     if (!await confirmDelete('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບໃບສັ່ງຊື້ຢານີ້?')) return;
-    
+    if (window.showActionLoading) window.showActionLoading('ກຳລັງລຶບໃບສັ່ງຊື້ຢາ...');
     try {
         const result = await fetchAPI(`api/purchase_orders.php?id=${poId}`, {
             method: 'DELETE'
         });
-        
+        if (window.hideActionLoading) window.hideActionLoading();
         if (result.success) {
             showToast(result.message || 'ລຶບໃບສັ່ງຊື້ຢາສຳເລັດ', 'success');
             setTimeout(() => window.location.reload(), 1000);
@@ -404,6 +404,7 @@ async function deletePO(poId) {
             showToast(result.message || 'ເກີດຂໍ້ຜິດພາດ', 'error');
         }
     } catch (e) {
+        if (window.hideActionLoading) window.hideActionLoading();
         showToast('ເກີດຂໍ້ຜິດພາດ', 'error');
     }
 }

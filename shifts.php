@@ -18,32 +18,43 @@ $userIdFilter = !empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 $statusFilter = $_GET['status'] ?? 'all';
 
 // Query shifts
-$query = "
-    SELECT s.*, u.full_name as cashier_name, u.username as cashier_username
-    FROM shifts s
-    LEFT JOIN users u ON s.user_id = u.id
-    WHERE DATE(s.opened_at) BETWEEN ? AND ?
-";
-$params = [$startDate, $endDate];
+$shifts = [];
+try {
+    $query = "
+        SELECT s.*, u.full_name as cashier_name, u.username as cashier_username
+        FROM shifts s
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE DATE(s.opened_at) BETWEEN ? AND ?
+    ";
+    $params = [$startDate, $endDate];
 
-if ($userIdFilter > 0) {
-    $query .= " AND s.user_id = ?";
-    $params[] = $userIdFilter;
+    if ($userIdFilter > 0) {
+        $query .= " AND s.user_id = ?";
+        $params[] = $userIdFilter;
+    }
+
+    if ($statusFilter === 'open' || $statusFilter === 'closed') {
+        $query .= " AND s.status = ?";
+        $params[] = $statusFilter;
+    }
+
+    $query .= " ORDER BY s.id DESC";
+
+    $stmt = $db->prepare($query);
+    $stmt->execute($params);
+    $shifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    error_log("Shifts query error: " . $e->getMessage());
+    $shifts = [];
 }
-
-if ($statusFilter === 'open' || $statusFilter === 'closed') {
-    $query .= " AND s.status = ?";
-    $params[] = $statusFilter;
-}
-
-$query .= " ORDER BY s.id DESC";
-
-$stmt = $db->prepare($query);
-$stmt->execute($params);
-$shifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get all staff for filter dropdown
-$users = $db->query("SELECT id, username, full_name FROM users ORDER BY full_name, username")->fetchAll(PDO::FETCH_ASSOC);
+$users = [];
+try {
+    $users = $db->query("SELECT id, username, full_name FROM users ORDER BY full_name, username")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    $users = [];
+}
 
 // Calculate totals for summary cards
 $totalShifts = count($shifts);
@@ -73,7 +84,10 @@ include 'includes/sidebar.php';
                 ກວດສອບຍອດຂາຍ, ການນັບເງິນສົດໃນລິ້ນຊັກ ແລະ ຜົນຕ່າງເງິນຂາດ/ເກີນປະຈຳກະ (Shift Balancing)
             </p>
         </div>
-        <div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <a href="<?= BASE_URL ?>pos.php" class="btn btn-warning btn-sm" style="font-weight:700;">
+                <i class="fas fa-clock"></i> ເປີດ / ປິດກະຂາຍ (ໜ້າ POS)
+            </a>
             <a href="<?= BASE_URL ?>pos.php" class="btn btn-primary btn-sm">
                 <i class="fas fa-cash-register"></i> ໄປໜ້າຂາຍ POS
             </a>
@@ -244,8 +258,13 @@ include 'includes/sidebar.php';
                                             <span class="badge" style="background:#fff8e6; color:#b76e00; border:1px solid #ffe399;"><i class="fas fa-circle-notch fa-spin"></i> ເປີດຢູ່</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td style="text-align:center;">
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="printShiftReport(<?= (int)$s['id'] ?>)" title="ພິມໃບສະຫຼຸບຍອດກະ" style="padding: 4px 8px;">
+                                    <td style="text-align:center; white-space:nowrap;">
+                                        <?php if ($s['status'] === 'open'): ?>
+                                            <a href="<?= BASE_URL ?>pos.php" class="btn btn-warning btn-sm" style="padding:4px 8px; font-weight:600; margin-right:4px;" title="ປິດກະນີ້ທີ່ໜ້າ POS">
+                                                <i class="fas fa-lock"></i> ປິດກະ
+                                            </a>
+                                        <?php endif; ?>
+                                        <button type="button" class="btn btn-outline btn-sm btn-icon" onclick="printShiftReport(<?= (int)$s['id'] ?>)" title="ພິມໃບສະຫຼຸບຍອດກະ" style="padding: 4px 8px; min-width:34px;">
                                             <i class="fas fa-print"></i>
                                         </button>
                                     </td>

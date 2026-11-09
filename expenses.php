@@ -292,11 +292,12 @@ async function saveExpense(e) {
 
 async function deleteExpense(id) {
     if (!await confirmDelete('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບລາຍຈ່າຍນີ້?')) return;
-    
+    if (window.showActionLoading) window.showActionLoading('ກຳລັງລຶບລາຍຈ່າຍ...');
     try {
         const result = await fetchAPI(`${BASE_URL}api/expenses.php?id=${id}`, {
             method: 'DELETE',
         });
+        if (window.hideActionLoading) window.hideActionLoading();
         if (result.success) {
             showToast('ລຶບລາຍຈ່າຍສຳເລັດ', 'success');
             setTimeout(() => window.location.reload(), 1000);
@@ -304,6 +305,7 @@ async function deleteExpense(id) {
             showToast(result.message || 'ເກີດຂໍ້ຜິດພາດ', 'error');
         }
     } catch (error) {
+        if (window.hideActionLoading) window.hideActionLoading();
         showToast('ເກີດຂໍ້ຜິດພາດ', 'error');
     }
 }
