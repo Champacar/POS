@@ -22,7 +22,18 @@ ServerSignature Off
 # ==============================
 # Block Access to Sensitive Files
 # ==============================
-<FilesMatch "\.(env|sql|log|bak|sh|yml|yaml|json|md|gitignore|htpasswd)$">
+<FilesMatch "\.(env|sql|log|bak|sh|yml|yaml|md|gitignore|htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block composer and package configs if present
+<FilesMatch "^(composer|package|package-lock)\.json$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

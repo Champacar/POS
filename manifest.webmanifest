@@ -1,0 +1,63 @@
+{
+  "name": "POS Pharma - ລະບົບຂາຍໜ້າຮ້ານ ແລະ ບໍລິຫານສາງຢາ",
+  "short_name": "POS Pharma",
+  "description": "ລະບົບຂາຍໜ້າຮ້ານ ແລະ ບໍລິຫານສາງຢາຄົບວົງຈອນ ອອກແບບສະເພາະສຳລັບຮ້ານຂາຍຢາ",
+  "start_url": "./pos.php",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2e7d32",
+  "orientation": "any",
+  "lang": "lo",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ໜ້າຂາຍ (POS)",
+      "short_name": "POS",
+      "description": "ເປີດໜ້າຈໍຂາຍຢາໜ້າຮ້ານ",
+      "url": "./pos.php",
+      "icons": [{ "src": "assets/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ລາຍງານການຂາຍ",
+      "short_name": "ລາຍງານ",
+      "description": "ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ສະຖິຕິ",
+      "url": "./index.php",
+      "icons": [{ "src": "assets/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ຈັດການສິນຄ້າ",
+      "short_name": "ສິນຄ້າ",
+      "description": "ລາຍການຢາ ແລະ ລາຄາ",
+      "url": "./products.php",
+      "icons": [{ "src": "assets/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ສາງຢາ (Stock)",
+      "short_name": "ສາງຢາ",
+      "description": "ກວດເຊັກສະຕ໋ອກ ແລະ Lot/Batch",
+      "url": "./inventory.php",
+      "icons": [{ "src": "assets/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["business", "finance", "medical"]
+}
