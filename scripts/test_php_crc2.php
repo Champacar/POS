@@ -1,0 +1,7 @@
+<?php
+require_once __DIR__ . '/../includes/lao_qr_helper.php';
+
+$str2 = "00020101021233980004BCEL0118ONEPAYSUBSCRIPTION0216mch679ae2c0a187d0320SBDMQTGMVMSRUVQUZOLY0406RULE-5051083030620155204729953034185802LA624602102030-06-01050410000820TAITTJVQEKRJZZJUFMIR6304";
+$calc = strtoupper(str_pad(dechex(crc16_ccitt($str2)), 4, '0', STR_PAD_LEFT));
+echo "PHP Calculated: " . $calc . PHP_EOL;
+echo "Expected:       DABB" . PHP_EOL;

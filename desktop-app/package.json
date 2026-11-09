@@ -1,0 +1,41 @@
+{
+  "name": "pospharma-desktop",
+  "version": "1.0.0",
+  "description": "ລະບົບຂາຍຢາດີ - Point of Sale Pharmacy Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "tree-kill": "^1.2.2"
+  },
+  "devDependencies": {
+    "electron": "^30.0.9",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.pospharma.app",
+    "productName": "POSPharma",
+    "directories": {
+      "output": "../dist/desktop"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "POS Pharma"
+    },
+    "asar": false,
+    "files": [
+      "**/*"
+    ]
+  }
+}

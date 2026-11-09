@@ -1,0 +1,16 @@
+# Ignore version control and local editor files
+.git
+.gitignore
+.vscode
+.impeccable
+
+# Ignore desktop packaging and builds (saves > 1GB of upload time)
+desktop-app/
+dist/
+scratch/
+
+# Ignore local environment and database files
+.env
+database/*.db
+database/*.sqlite
+logs/*.log

@@ -1,0 +1,17 @@
+[02-Nov-2026 04:43:21 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 04:43:45 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: YES)
+[02-Nov-2026 05:20:17 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 05:20:58 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 09:43:24 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 09:45:25 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 09:45:33 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 09:46:03 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[02-Nov-2026 09:46:21 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[03-Nov-2026 05:00:06 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[03-Nov-2026 05:00:41 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[03-Nov-2026 05:01:51 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[03-Nov-2026 13:00:49 UTC] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[03-Nov-2026 13:17:05 UTC] Error: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'product_name' cannot be null in D:\Project\pospharma\api\sales.php:98
+[03-Nov-2026 13:22:28 UTC] Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'synced' in 'field list' in D:\Project\pospharma\api\sales.php:148
+[03-Nov-2026 13:23:50 UTC] Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'uuid' in 'field list' in D:\Project\pospharma\api\expenses.php:59
+[05-Nov-2026 00:18:40 Europe/Berlin] Database connection failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it

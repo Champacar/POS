@@ -1,0 +1,157 @@
+# ============================================
+# POS Pharmacy - Apache Configuration
+# ລະບົບຂາຍຢາດີ - POINT OF SALE
+# ============================================
+# ຮອງຮັບ: cPanel, VPS, Cloud (Apache)
+# ============================================
+
+# ==============================
+# Directory Protection
+# ==============================
+Options -Indexes -ExecCGI
+ServerSignature Off
+
+# ==============================
+# Force HTTPS (ເປີດໃຊ້ເມື່ອມີ SSL Certificate)
+# ລຶບ # ອອກເພື່ອເປີດໃຊ້
+# ==============================
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ==============================
+# Block Access to Sensitive Files
+# ==============================
+<FilesMatch "\.(env|sql|log|bak|sh|yml|yaml|json|md|gitignore|htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block access to hidden files (.git, .env, etc.)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)\.(?!well-known) - [F]
+</IfModule>
+
+# ==============================
+# Block Access to Protected Directories
+# ==============================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block direct access to config directory
+    RewriteRule ^config/ - [F,L]
+    
+    # Block direct access to database directory
+    RewriteRule ^database/ - [F,L]
+    
+    # Block direct access to includes directory
+    RewriteRule ^includes/ - [F,L]
+    
+    # Block direct access to scratch directory
+    RewriteRule ^scratch/ - [F,L]
+    
+    # Block direct access to logs directory
+    RewriteRule ^logs/ - [F,L]
+</IfModule>
+
+# ==============================
+# Security Headers
+# ==============================
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    
+    # Remove server info
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# ==============================
+# PHP Settings (if .htaccess PHP config is allowed)
+# ==============================
+<IfModule mod_php.c>
+    # Hide PHP version
+    php_flag expose_php Off
+    
+    # Session security
+    php_value session.cookie_httponly 1
+    php_value session.cookie_samesite "Lax"
+    php_value session.use_strict_mode 1
+    php_value session.use_only_cookies 1
+    
+    # Upload limits
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 120
+    
+    # Timezone
+    php_value date.timezone "Asia/Vientiane"
+</IfModule>
+
+# ==============================
+# Cache Control for Assets
+# ==============================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+    
+    # CSS & JavaScript
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 month"
+    ExpiresByType font/ttf "access plus 1 month"
+</IfModule>
+
+# ==============================
+# GZIP Compression
+# ==============================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ==============================
+# Custom Error Pages
+# ==============================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/(assets|desktop-app|logs|database|config)/ [NC]
+    RewriteRule ^.*$ 404.php [L]
+</IfModule>
+ErrorDocument 404 /404.php

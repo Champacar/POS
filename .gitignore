@@ -1,0 +1,37 @@
+# Environment
+.env
+
+# Database (keep schema and migrations, ignore local runtime databases)
+database/*.db
+database/*.sqlite
+
+# Logs
+logs/*.log
+
+# Backups
+backup_*.sql
+*.sql.gz
+
+# Uploads (user content)
+assets/images/uploads/
+assets/media/*.mp4
+assets/media/*.webm
+
+# IDE & System
+.idea/
+.vscode/
+.impeccable/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Scratch
+scratch/
+
+# Node & Desktop App Binaries
+node_modules/
+desktop-app/node_modules/
+desktop-app/bin/
+dist/
+*.exe

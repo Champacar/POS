@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pospharma-web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      # Keep assets/images, logs, and database persistent
+      - pospharma_images:/var/www/html/assets/images
+      - pospharma_logs:/var/www/html/logs
+    environment:
+      - APP_ENV=production
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=pospharma
+      - DB_USER=posuser
+      - DB_PASS=pospass
+      - BASE_URL=/
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mariadb:10.6
+    container_name: pospharma-db
+    ports:
+      - "33066:3306" # Maps custom port to avoid conflict with local MySQL/XAMPP
+    environment:
+      - MYSQL_DATABASE=pospharma
+      - MYSQL_USER=posuser
+      - MYSQL_PASSWORD=pospass
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    volumes:
+      - pospharma_db_data:/var/lib/mysql
+      # Auto-import database seed on first startup
+      - ./database/pospharma.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+volumes:
+  pospharma_images:
+  pospharma_logs:
+  pospharma_db_data:
