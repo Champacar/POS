@@ -586,6 +586,36 @@ async function executeReceiptPrint(opts = {}) {
                 }
                 printSuccess = false; // Keep preview modal open so cashier can complete print
             }
+        } else if (window.QZBridge && window.QZBridge.connected) {
+            // 2. Web App with QZ Tray silent rasterized print
+            let htmlContent = '';
+            try {
+                if (iframe && iframe.contentDocument && iframe.contentDocument.documentElement) {
+                    htmlContent = iframe.contentDocument.documentElement.outerHTML;
+                    if (!htmlContent.includes('<base')) {
+                        htmlContent = htmlContent.replace('<head>', `<head><base href="${window.location.origin}/">`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[QZBridge] Could not extract outerHTML:', e);
+            }
+
+            const targetPayload = htmlContent || fullUrl;
+            const ok = await window.QZBridge.printReceipt(targetPayload, {
+                printer: selectedPrinter
+            });
+
+            if (ok) {
+                printSuccess = true;
+                showToast(opts.isAuto ? 'ພິມໃບບິນອັດຕະໂນມັດສຳເລັດ (QZ Tray)' : 'ສັ່ງພິມໃບບິນແລ້ວ (QZ Tray)', 'success');
+            } else {
+                console.warn('[QZBridge] Silent print failed, falling back to browser print');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    printSuccess = true;
+                }
+            }
         } else {
             // Web App (Browser): standard browser print dialog
             if (iframe && iframe.contentWindow) {
@@ -642,6 +672,19 @@ async function triggerCashDrawerKick(options = {}) {
         }
     }
 
+    // 2. QZ Tray Direct ESC/POS Pulse (Raw bytes 1B 70 00 19 FA & 1B 70 01 19 FA)
+    if (window.QZBridge && window.QZBridge.connected) {
+        try {
+            const ok = await window.QZBridge.kickCashDrawer(selectedPrinter);
+            if (ok) {
+                if (!options.silent) showToast('ສັ່ງເປີດລິ້ນຊັກເງິນສຳເລັດ (QZ Tray / ESC/POS)', 'success');
+                return true;
+            }
+        } catch (e) {
+            console.warn('[QZBridge] Drawer kick error:', e);
+        }
+    }
+
     // Web browser fallback: load api/drawer.php into hidden iframe
     try {
         let kickFrame = document.getElementById('cashDrawerKickFrame');
@@ -669,14 +712,33 @@ async function initPrinterInfo() {
     const nameSpan = document.getElementById('printerDeviceName');
     const dropdown = document.getElementById('printerSelectDropdown');
 
-    if (!window.api || typeof window.api.getPrinters !== 'function') {
+    const hasDesktop = Boolean(window.api && typeof window.api.getPrinters === 'function');
+    const hasQZ = Boolean(window.QZBridge && window.QZBridge.connected);
+
+    if (!hasDesktop && !hasQZ) {
+        if (window.QZBridge && typeof window.QZBridge.connect === 'function' && !window.QZBridge.connected) {
+            window.QZBridge.connect().then(ok => {
+                if (ok) initPrinterInfo();
+            }).catch(() => {});
+        }
         if (badge) badge.style.display = 'none';
         if (dropdown) dropdown.style.display = 'none';
         return;
     }
 
     try {
-        const printers = await window.api.getPrinters();
+        let rawPrinters = [];
+        if (hasDesktop) {
+            rawPrinters = await window.api.getPrinters();
+        } else if (hasQZ) {
+            rawPrinters = await window.QZBridge.refreshPrinters();
+        }
+
+        const printers = (rawPrinters || []).map(p => {
+            if (typeof p === 'string') return { name: p, isDefault: false };
+            return p;
+        });
+
         if (Array.isArray(printers) && printers.length > 0) {
             const savedPrinter = localStorage.getItem('pos_receipt_printer') || localStorage.getItem('pos_selected_printer') || '';
             const defaultPrinter = printers.find(p => p.isDefault) || printers[0];
@@ -718,6 +780,12 @@ async function initPrinterInfo() {
                 };
             }
             if (dropdown) {
+                dropdown.onchange = () => {
+                    if (dropdown.value) {
+                        localStorage.setItem('pos_receipt_printer', dropdown.value);
+                        if (nameSpan) nameSpan.textContent = dropdown.value;
+                    }
+                };
                 dropdown.onblur = () => {
                     dropdown.style.display = 'none';
                     badge.style.display = 'inline-flex';

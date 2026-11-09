@@ -16,9 +16,24 @@ function escapeHTML(str) {
 async function loadLabelPrinters() {
     const select = document.getElementById('labelPrinterSelect');
     if (!select) return;
-    if (window.api && typeof window.api.getPrinters === 'function') {
+
+    const hasDesktop = Boolean(window.api && typeof window.api.getPrinters === 'function');
+    const hasQZ = Boolean(window.QZBridge && window.QZBridge.connected);
+
+    if (hasDesktop || hasQZ) {
         try {
-            const printers = await window.api.getPrinters();
+            let rawPrinters = [];
+            if (hasDesktop) {
+                rawPrinters = await window.api.getPrinters();
+            } else if (hasQZ) {
+                rawPrinters = await window.QZBridge.refreshPrinters();
+            }
+
+            const printers = (rawPrinters || []).map(p => {
+                if (typeof p === 'string') return { name: p, isDefault: false };
+                return p;
+            });
+
             select.innerHTML = '';
             const saved = localStorage.getItem('pos_label_printer') || localStorage.getItem('pos_barcode_printer') || localStorage.getItem('pos_selected_printer') || '';
             let selectedName = '';
@@ -212,6 +227,19 @@ async function printLabel(index) {
         });
         if (res && res.success) {
             showToast(`ພິມສະຫຼາກ ${item.product_name} ສຳເລັດ`, 'success');
+            return true;
+        }
+    }
+
+    // In Web Browser with QZ Tray silent label print
+    if (window.QZBridge && window.QZBridge.connected) {
+        showToast(`ກຳລັງສັ່ງພິມສະຫຼາກ: ${item.product_name}...`, 'info');
+        const ok = await window.QZBridge.printLabel(url, {
+            printer: labelPrinter,
+            size: size
+        });
+        if (ok) {
+            showToast(`ພິມສະຫຼາກ ${item.product_name} ສຳເລັດ (QZ Tray)`, 'success');
             return true;
         }
     }

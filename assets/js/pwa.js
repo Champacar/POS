@@ -8,7 +8,8 @@ let deferredPrompt = null;
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
+        const swPath = (typeof BASE_URL !== 'undefined') ? (BASE_URL.replace(/\/$/, '') + '/sw.js') : './sw.js';
+        navigator.serviceWorker.register(swPath)
             .then((reg) => {
                 // Check for SW updates
                 reg.onupdatefound = () => {

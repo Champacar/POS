@@ -22,6 +22,10 @@ $footerShopNameEn = $settings['shop_name_en'] ?? 'POINT OF SALE';
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Hardware Integration & QZ Tray Bridge -->
+    <script src="<?= BASE_URL ?>assets/vendor/qz-tray.min.js"></script>
+    <script src="<?= BASE_URL ?>assets/js/qz_bridge.js?v=<?= time() ?>"></script>
+
     <!-- Main JS -->
     <script src="<?= BASE_URL ?>assets/js/main.js?v=<?= time() ?>"></script>
     <?php if (isset($extraScripts)): ?>

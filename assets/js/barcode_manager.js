@@ -656,6 +656,20 @@ function executeStickerPrint() {
         return;
     }
 
+    // QZ Tray Silent Print (Web Browser via WebSocket)
+    if (window.QZBridge && window.QZBridge.connected) {
+        showToast(`ກຳລັງສັ່ງພິມສະຕິກເກີ ${itemsToPrint.length} ດວງ (QZ Tray)...`, 'info');
+        window.QZBridge.printLabel(fullHtml, {
+            printer: barcodePrinter,
+            widthMm: tpl.width_mm,
+            heightMm: tpl.height_mm,
+            orientation: orientation
+        }).then(ok => {
+            if (ok) showToast('ພິມສະຕິກເກີສຳເລັດແລ້ວ (QZ Tray)', 'success');
+        });
+        return;
+    }
+
     // Web Browser Window Print
     const printWindow = window.open('', '_blank', 'width=850,height=850');
     if (printWindow) {
@@ -1231,9 +1245,14 @@ function initPrinterConfig() {
         select.value = savedPrinter;
     }
 
-    // If running in Desktop App, populate available system printers
-    if (window.api && typeof window.api.getPrinters === 'function') {
-        window.api.getPrinters().then(printers => {
+    // If running in Desktop App or QZ Tray, populate available system printers
+    const hasDesktop = Boolean(window.api && typeof window.api.getPrinters === 'function');
+    const hasQZ = Boolean(window.QZBridge && window.QZBridge.connected);
+
+    if (hasDesktop || hasQZ) {
+        const fetcher = hasDesktop ? window.api.getPrinters() : window.QZBridge.refreshPrinters();
+        Promise.resolve(fetcher).then(rawPrinters => {
+            const printers = (rawPrinters || []).map(p => typeof p === 'string' ? { name: p, isDefault: false } : p);
             if (printers && printers.length > 0 && select) {
                 select.innerHTML = '<option value="">-- ເລືອກເຄື່ອງພິມ --</option>' + 
                     printers.map(p => `<option value="${escapeHtml(p.name)}" ${p.name === savedPrinter ? 'selected' : ''}>${escapeHtml(p.name)}${p.isDefault ? ' (Default)' : ''}</option>`).join('');
@@ -1268,6 +1287,14 @@ function executeTestPrint() {
             pageSize: { width: Math.round(tpl.width_mm * 1000), height: Math.round(tpl.height_mm * 1000) }
         }).then(res => {
             showToast('ສົ່ງຄຳສັ່ງທົດສອບພິມສຳເລັດແລ້ວ', 'success');
+        });
+    } else if (window.QZBridge && window.QZBridge.connected) {
+        window.QZBridge.printLabel(html, {
+            printer: barcodePrinter,
+            widthMm: tpl.width_mm,
+            heightMm: tpl.height_mm
+        }).then(ok => {
+            if (ok) showToast('ສົ່ງຄຳສັ່ງທົດສອບພິມສຳເລັດແລ້ວ (QZ Tray)', 'success');
         });
     } else {
         const w = window.open('', '_blank', 'width=800,height=800');

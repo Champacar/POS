@@ -495,6 +495,86 @@ include 'includes/sidebar.php';
                     </div>
                 </div>
 
+                <!-- Hardware, QZ Tray & Thermal Printing Card -->
+                <div class="card settings-form-card" style="margin-top: 24px;">
+                    <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3 class="card-section-title" style="margin-bottom:4px;">
+                                <i class="fas fa-print" style="color:var(--primary); margin-right:6px;"></i> ລະບົບເຊື່ອມຕໍ່ Hardware & ເຄື່ອງພິມ (QZ Tray / ESC/POS)
+                            </h3>
+                            <p style="font-size:12.5px; color:#5e6c84; margin-bottom:0;">
+                                ຮອງຮັບການພິມໃບບິນອັດຕະໂນມັດ, ເຕະລິ້ນຊັກເກັບເງິນ (RJ11), ສະແກນບາໂຄ້ດ ແລະ ພິມສະຫຼາກຢາຜ່ານ QZ Tray Local Bridge
+                            </p>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="qzStatusBadge" class="badge badge-secondary" style="font-size:12px; padding:6px 12px; font-weight:600;">
+                                <i class="fas fa-circle-notch fa-spin"></i> ກວດສອບ QZ Tray...
+                            </span>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="initHardwareSettingsUI(true)">
+                                <i class="fas fa-sync-alt"></i> ເຊື່ອມຕໍ່ໃໝ່
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-top:16px;">
+                        <div class="form-row-3" style="gap:16px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-weight:700;">
+                                    🧾 ເຄື່ອງພິມໃບບິນ (Receipt 80mm/58mm)
+                                </label>
+                                <select class="form-control" id="hwReceiptPrinter" onchange="saveHardwarePref('pos_receipt_printer', this.value)">
+                                    <option value="">-- ເລືອກເຄື່ອງພິມໃບບິນ --</option>
+                                </select>
+                                <small class="text-muted">ໃຊ້ສໍາລັບພິມໃບບິນຂາຍ ແລະ ສັ່ງເຕະລິ້ນຊັກເງິນ</small>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-weight:700;">
+                                    🏷️ ເຄື່ອງພິມສະຫຼາກຢາ (Medicine Labels)
+                                </label>
+                                <select class="form-control" id="hwLabelPrinter" onchange="saveHardwarePref('pos_label_printer', this.value)">
+                                    <option value="">-- ເລືອກເຄື່ອງພິມສະຫຼາກຢາ --</option>
+                                </select>
+                                <small class="text-muted">ສະຕິກເກີ 8x5cm, 7x5cm, 5x3cm (Grozziie / Xprinter)</small>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-weight:700;">
+                                    📊 ເຄື່ອງພິມບາໂຄ້ດ (Barcode Stickers)
+                                </label>
+                                <select class="form-control" id="hwBarcodePrinter" onchange="saveHardwarePref('pos_barcode_printer', this.value)">
+                                    <option value="">-- ເລືອກເຄື່ອງພິມບາໂຄ້ດ --</option>
+                                </select>
+                                <small class="text-muted">ໃຊ້ສຳລັບພິມບາໂຄ້ດຕິດສິນຄ້າໃນຄັງ</small>
+                            </div>
+                        </div>
+
+                        <hr class="form-divider" style="margin: 16px 0;">
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                            <div style="display:flex; align-items:center; gap:20px;">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--text-dark); margin-bottom:0;">
+                                    <input type="checkbox" id="hwAutoPrintToggle" onchange="saveHardwarePref('pos_auto_print', this.checked ? 'true' : 'false')" style="width:17px; height:17px; accent-color:var(--primary);">
+                                    <span>ພິມໃບບິນອັດຕະໂນມັດ (Auto Print on Checkout)</span>
+                                </label>
+                            </div>
+
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintReceipt()">
+                                    <i class="fas fa-receipt"></i> ທົດສອບພິມໃບບິນ
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintLabel()">
+                                    <i class="fas fa-tag"></i> ທົດສອບພິມສະຫຼາກຢາ
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="testCashDrawer()">
+                                    <i class="fas fa-cash-register"></i> ທົດສອບເຕະລິ້ນຊັກ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; font-size:12px; color:#5e6c84;">
+                        <i class="fas fa-info-circle"></i> ຖ້າໃຊ້ງານຜ່ານ Browser ແລ້ວສະຖານະຂຶ້ນວ່າ "ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່", ທ່ານສາມາດດາວໂຫຼດ ແລະ ເປີດໂປຣແກຣມ <a href="https://qz.io/download/" target="_blank" style="color:var(--primary); font-weight:600; text-decoration:underline;">QZ Tray (Free)</a> ຢູ່ເຄື່ອງຄອມພິວເຕີຂອງທ່ານເພື່ອໃຫ້ລະບົບພິມງຽບໂດຍບໍ່ຕ້ອງຜ່ານໜ້າຕ່າງ Preview.
+                    </div>
+                </div>
+
                 <!-- Payment & CFD Settings Card -->
                 <div class="card settings-form-card" style="margin-top: 24px;">
                     <div class="card-header-flex">
@@ -1158,6 +1238,123 @@ async function testCashDrawer() {
         window.open('api/drawer.php?test=1', '_blank', 'width=200,height=200');
     }
 }
+
+// Hardware & QZ Tray UI Controller
+async function initHardwareSettingsUI(forceReconnect = false) {
+    const badge = document.getElementById('qzStatusBadge');
+    const recSel = document.getElementById('hwReceiptPrinter');
+    const lblSel = document.getElementById('hwLabelPrinter');
+    const bcSel = document.getElementById('hwBarcodePrinter');
+    const autoPrintToggle = document.getElementById('hwAutoPrintToggle');
+
+    if (autoPrintToggle) {
+        autoPrintToggle.checked = (localStorage.getItem('pos_auto_print') === 'true');
+    }
+
+    const hasDesktop = Boolean(window.api && typeof window.api.getPrinters === 'function');
+    let hasQZ = Boolean(window.QZBridge && window.QZBridge.connected);
+
+    if (forceReconnect && window.QZBridge) {
+        if (badge) badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ກຳລັງເຊື່ອມຕໍ່...';
+        await window.QZBridge.connect();
+        hasQZ = Boolean(window.QZBridge && window.QZBridge.connected);
+    }
+
+    if (hasDesktop) {
+        if (badge) {
+            badge.className = 'badge badge-success';
+            badge.innerHTML = '<i class="fas fa-desktop"></i> Desktop App (Direct Print)';
+        }
+    } else if (hasQZ) {
+        if (badge) {
+            badge.className = 'badge badge-success';
+            badge.innerHTML = '<i class="fas fa-check-circle"></i> QZ Tray: ເຊື່ອມຕໍ່ແລ້ວ';
+        }
+    } else {
+        if (badge) {
+            badge.className = 'badge badge-secondary';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> QZ Tray: ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່';
+        }
+    }
+
+    try {
+        let rawPrinters = [];
+        if (hasDesktop) {
+            rawPrinters = await window.api.getPrinters();
+        } else if (hasQZ) {
+            rawPrinters = await window.QZBridge.refreshPrinters();
+        }
+
+        const printers = (rawPrinters || []).map(p => typeof p === 'string' ? { name: p, isDefault: false } : p);
+
+        const savedReceipt = localStorage.getItem('pos_receipt_printer') || '';
+        const savedLabel = localStorage.getItem('pos_label_printer') || '';
+        const savedBarcode = localStorage.getItem('pos_barcode_printer') || '';
+
+        const populateSelect = (selectEl, savedVal) => {
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">-- ເລືອກເຄື່ອງພິມ --</option>';
+            if (printers.length === 0) {
+                selectEl.innerHTML += '<option value="">(ບໍ່ພົບເຄື່ອງພິມ ຫຼື ຍັງບໍ່ໄດ້ເປີດ QZ Tray)</option>';
+                return;
+            }
+            printers.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.name + (p.isDefault ? ' (Default)' : '');
+                if (savedVal ? p.name === savedVal : p.isDefault) {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+        };
+
+        populateSelect(recSel, savedReceipt);
+        populateSelect(lblSel, savedLabel);
+        populateSelect(bcSel, savedBarcode);
+    } catch (e) {
+        console.warn('Could not populate hardware printers:', e);
+    }
+}
+
+function saveHardwarePref(key, value) {
+    if (value !== undefined && value !== null) {
+        localStorage.setItem(key, value);
+        showToast('ບັນທຶກການຕັ້ງຄ່າເຄື່ອງພິມຮຽບຮ້ອຍ', 'success');
+    }
+}
+
+function testHardwarePrintReceipt() {
+    if (typeof printSampleReceipt === 'function') {
+        printSampleReceipt();
+    }
+}
+
+function testHardwarePrintLabel() {
+    const url = `${BASE_URL}api/medicine_label.php?sample=1&product_name=Paracetamol+500mg&qty=2&usage=1+ເມັດ+ຫຼັງອາຫານ+(ເຊົ້າ-ແລງ)&size=8x5&autoprint=1`;
+    const labelPrinter = localStorage.getItem('pos_label_printer') || '';
+
+    if (window.api && typeof window.api.printReceiptSilent === 'function') {
+        window.api.printReceiptSilent({ url: url, deviceName: labelPrinter }).then(() => {
+            showToast('ສົ່ງຄຳສັ່ງທົດສອບພິມສະຫຼາກຢາແລ້ວ', 'success');
+        });
+    } else if (window.QZBridge && window.QZBridge.connected) {
+        window.QZBridge.printLabel(url, { printer: labelPrinter, size: '8x5' }).then(() => {
+            showToast('ສົ່ງຄຳສັ່ງທົດສອບພິມສະຫຼາກຢາແລ້ວ (QZ Tray)', 'success');
+        });
+    } else {
+        window.open(url, '_blank', 'width=420,height=520');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initHardwareSettingsUI();
+    if (window.QZBridge && typeof window.QZBridge.onStatusChange === 'function') {
+        window.QZBridge.onStatusChange(function() {
+            initHardwareSettingsUI();
+        });
+    }
+});
 </script>
 
 <?php if (!empty($message)): ?>
