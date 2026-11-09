@@ -237,11 +237,27 @@ function getDB() {
 
                 // Auto-migration for MySQL missing columns
                 try {
-                    // 1. Auto-migrate shop_settings columns
+                    // 1. Auto-migrate users table (role ENUM & permissions)
+                    try {
+                        $userCols = array_column($pdo->query("SHOW COLUMNS FROM `users`")->fetchAll(), 'Field');
+                        if (!empty($userCols)) {
+                            if (!in_array('permissions', $userCols, true)) {
+                                $pdo->exec("ALTER TABLE `users` ADD COLUMN `permissions` TEXT NULL AFTER `role`");
+                            }
+                            $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin','cashier','manager','developer','pharmacist') NOT NULL DEFAULT 'cashier'");
+                        }
+                    } catch (Throwable $e) {
+                        error_log("Users migration note: " . $e->getMessage());
+                    }
+
+                    // 2. Auto-migrate shop_settings columns
                     $shopCols = array_column($pdo->query("SHOW COLUMNS FROM `shop_settings`")->fetchAll(), 'Field');
                     if (!empty($shopCols)) {
                         $missingShopCols = [
                             'email' => "VARCHAR(100) DEFAULT ''",
+                            'company_name' => "VARCHAR(255) NULL",
+                            'tax_id' => "VARCHAR(50) NULL",
+                            'tax_invoice_prefix' => "VARCHAR(20) DEFAULT 'TAX-'",
                             'footer_image' => "VARCHAR(255) DEFAULT NULL",
                             'qr_code' => "VARCHAR(255) DEFAULT NULL",
                             'cfd_media' => "VARCHAR(255) DEFAULT NULL",
@@ -265,10 +281,11 @@ function getDB() {
                         }
                     }
 
-                    // 2. Auto-migrate sales columns
+                    // 3. Auto-migrate sales columns
                     $saleCols = array_column($pdo->query("SHOW COLUMNS FROM `sales`")->fetchAll(), 'Field');
                     if (!empty($saleCols)) {
                         $missingSaleCols = [
+                            'shift_id' => "INT DEFAULT NULL",
                             'synced' => "TINYINT(1) NOT NULL DEFAULT 0",
                             'cash_amount' => "DECIMAL(15,2) NOT NULL DEFAULT 0.00",
                             'transfer_amount' => "DECIMAL(15,2) NOT NULL DEFAULT 0.00",
@@ -277,15 +294,39 @@ function getDB() {
                             'paid_amount_foreign' => "DECIMAL(12,2) DEFAULT 0.00",
                             'change_amount_foreign' => "DECIMAL(12,2) DEFAULT 0.00",
                             'change_amount' => "DECIMAL(15,2) DEFAULT 0.00",
+                            'tax_invoice_number' => "VARCHAR(50) NULL",
+                            'customer_tax_id' => "VARCHAR(50) NULL",
+                            'customer_company' => "VARCHAR(255) NULL",
+                            'customer_address' => "TEXT NULL",
+                            'is_tax_invoice' => "TINYINT(1) DEFAULT 0",
                         ];
                         foreach ($missingSaleCols as $col => $def) {
                             if (!in_array($col, $saleCols, true)) {
                                 $pdo->exec("ALTER TABLE `sales` ADD COLUMN `{$col}` {$def}");
                             }
                         }
+                        try {
+                            $pdo->exec("ALTER TABLE `sales` MODIFY COLUMN `payment_method` ENUM('cash','transfer','credit','split') NOT NULL DEFAULT 'cash'");
+                        } catch (Throwable $e) {}
                     }
 
-                    // 3. Auto-migrate expenses columns
+                    // 4. Auto-migrate sale_items cost_price
+                    try {
+                        $saleItemCols = array_column($pdo->query("SHOW COLUMNS FROM `sale_items`")->fetchAll(), 'Field');
+                        if (!empty($saleItemCols) && !in_array('cost_price', $saleItemCols, true)) {
+                            $pdo->exec("ALTER TABLE `sale_items` ADD COLUMN `cost_price` DECIMAL(15,2) DEFAULT 0.00 AFTER `unit_price`");
+                        }
+                    } catch (Throwable $e) {}
+
+                    // 5. Auto-migrate products supplier_id
+                    try {
+                        $prodCols = array_column($pdo->query("SHOW COLUMNS FROM `products`")->fetchAll(), 'Field');
+                        if (!empty($prodCols) && !in_array('supplier_id', $prodCols, true)) {
+                            $pdo->exec("ALTER TABLE `products` ADD COLUMN `supplier_id` INT DEFAULT NULL");
+                        }
+                    } catch (Throwable $e) {}
+
+                    // 6. Auto-migrate expenses columns
                     $expCols = array_column($pdo->query("SHOW COLUMNS FROM `expenses`")->fetchAll(), 'Field');
                     if (!empty($expCols)) {
                         if (!in_array('uuid', $expCols, true)) {
@@ -296,20 +337,18 @@ function getDB() {
                         }
                     }
 
-                    // 4. Auto-migrate stock_history columns
+                    // 7. Auto-migrate stock_history columns
                     $stockHistCols = array_column($pdo->query("SHOW COLUMNS FROM `stock_history`")->fetchAll(), 'Field');
                     if (!empty($stockHistCols) && !in_array('supplier_id', $stockHistCols, true)) {
                         $pdo->exec("ALTER TABLE `stock_history` ADD COLUMN `supplier_id` INT(11) DEFAULT NULL AFTER `user_id`");
                     }
 
-                    // 5. Auto-run comprehensive migration if any core table or column is missing
+                    // 8. Auto-create migration tables if missing (shifts, stock_audits, product_barcodes, units, suppliers)
                     $hasShifts = $pdo->query("SHOW TABLES LIKE 'shifts'")->fetch();
-                    $userCols = array_column($pdo->query("SHOW COLUMNS FROM `users`")->fetchAll(), 'Field');
-                    $hasPermissions = in_array('permissions', $userCols, true);
-                    $hasBarcodes = $pdo->query("SHOW TABLES LIKE 'product_barcodes'")->fetch();
                     $hasStockAudits = $pdo->query("SHOW TABLES LIKE 'stock_audits'")->fetch();
+                    $hasBarcodes = $pdo->query("SHOW TABLES LIKE 'product_barcodes'")->fetch();
 
-                    if (!$hasShifts || !$hasPermissions || !$hasBarcodes || !$hasStockAudits) {
+                    if (!$hasShifts || !$hasStockAudits || !$hasBarcodes) {
                         $migFile = __DIR__ . '/../database/migrate.sql';
                         if (file_exists($migFile)) {
                             $rawSql = file_get_contents($migFile);
@@ -320,7 +359,7 @@ function getDB() {
                                     try {
                                         $pdo->exec($q);
                                     } catch (Throwable $t) {
-                                        // Ignore already existing column / table errors
+                                        // Ignore already existing errors
                                     }
                                 }
                             }
