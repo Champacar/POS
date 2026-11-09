@@ -87,9 +87,19 @@ include 'includes/sidebar.php';
                     <i class="fas fa-plus"></i> ເພີ່ມສິນຄ້າໃໝ່
                 </button>
             </div>
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="ຄົ້ນຫາສິນຄ້າ..." value="<?= $search ?>" oninput="filterTable('searchProd','productTable')" id="searchProd">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div class="product-view-toggle" title="ປ່ຽນມຸມມອງ">
+                    <button type="button" class="btn-view-mode active" id="btnViewTable" onclick="setProductViewMode('table')" title="ສະແດງແບບຕາຕະລາງ">
+                        <i class="fas fa-table"></i>
+                    </button>
+                    <button type="button" class="btn-view-mode" id="btnViewCard" onclick="setProductViewMode('card')" title="ສະແດງແບບກາດ (Card List)">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ຄົ້ນຫາສິນຄ້າ..." value="<?= $search ?>" oninput="filterProductsCombined('searchProd')" id="searchProd">
+                </div>
             </div>
         </div>
 
@@ -110,7 +120,8 @@ include 'includes/sidebar.php';
             <?php endif; ?>
         </div>
         <?php else: ?>
-        <div class="card">
+        <!-- 1. Table View Container -->
+        <div class="card" id="productTableViewContainer">
             <div class="table-responsive">
                 <table class="table" id="productTable">
                     <thead>
@@ -200,6 +211,72 @@ include 'includes/sidebar.php';
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- 2. Responsive Card List View (Mobile & Touch Friendly) -->
+        <div class="product-cards-grid" id="productCardView" style="display:none;">
+            <?php foreach ($products as $i => $p): ?>
+                <div class="product-item-card" data-barcode="<?= htmlspecialchars($p['barcode'] ?? '') ?>" data-name="<?= htmlspecialchars($p['name']) ?>" data-category="<?= htmlspecialchars($p['category_name'] ?? '') ?>">
+                    <div class="product-card-top">
+                        <div class="product-card-img-wrap">
+                            <?php if (!empty($p['image']) && file_exists('assets/images/products/' . $p['image'])): ?>
+                                <img src="assets/images/products/<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" class="product-card-img" onclick="previewImageLightbox('assets/images/products/<?= htmlspecialchars($p['image']) ?>', '<?= htmlspecialchars(addslashes($p['name'])) ?>')" title="ຄລິກເພື່ອເບິ່ງຮູບ">
+                            <?php else: ?>
+                                <div class="product-card-placeholder" title="ບໍ່ມີຮູບ"><i class="fas fa-pills"></i></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="product-card-header-info">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px; margin-bottom:4px;">
+                                <span class="badge badge-success" style="font-size:11px;"><?= sanitize($p['category_name'] ?? 'ອື່ນໆ') ?></span>
+                                <?php if ($p['stock_quantity'] <= $p['min_stock']): ?>
+                                    <span class="badge badge-danger" style="font-size:11px;">ຍັງເຫຼືອ: <?= $p['stock_quantity'] ?> <?= sanitize($p['unit']) ?></span>
+                                <?php else: ?>
+                                    <span class="badge badge-success" style="font-size:11px;">ຍັງເຫຼືອ: <?= $p['stock_quantity'] ?> <?= sanitize($p['unit']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <h4 class="product-card-title"><?= sanitize($p['name']) ?></h4>
+                            <div class="product-card-barcode">
+                                <i class="fas fa-barcode"></i> <?= !empty($p['barcode']) ? htmlspecialchars($p['barcode']) : '<span class="text-muted">ບໍ່ມີບາໂຄດ</span>' ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card-details">
+                        <div class="product-card-price-row">
+                            <div>
+                                <span class="text-muted" style="font-size:11px;">ຕົ້ນທຶນ:</span>
+                                <div style="font-size:12.5px;"><?= formatCurrency($p['cost_price']) ?> ₭</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span class="text-muted" style="font-size:11px;">ລາຄາຂາຍ:</span>
+                                <div class="text-primary fw-bold" style="font-size:15px;"><?= formatCurrency($p['selling_price']) ?> ₭</div>
+                            </div>
+                        </div>
+                        <?php if ($p['expiry_date']): ?>
+                        <div style="margin-top:6px; font-size:11.5px; color:#5e6c84;">
+                            <i class="far fa-calendar-alt"></i> ໝົດອາຍຸ: <?= formatDate($p['expiry_date']) ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="product-card-actions">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openMultiBarcodeModal(<?= (int)$p['id'] ?>, '<?= sanitize($p['name']) ?>', '<?= sanitize($p['unit']) ?>', <?= (float)$p['selling_price'] ?>)" title="ຈັດການຫຼາຍບາໂຄດ">
+                            <i class="fas fa-layer-group"></i> ບາໂຄດ
+                        </button>
+                        <?php if (!empty($p['barcode'])): ?>
+                        <button type="button" class="btn btn-outline btn-sm" data-id="<?= (int)$p['id'] ?>" data-barcode="<?= htmlspecialchars($p['barcode']) ?>" data-name="<?= sanitize($p['name']) ?>" data-price="<?= formatCurrency($p['selling_price']) ?>" onclick="openPrintBarcode(this.dataset.id, this.dataset.barcode, this.dataset.name, this.dataset.price)" title="ພິມບາໂຄດ">
+                            <i class="fas fa-print"></i> ພິມ
+                        </button>
+                        <?php endif; ?>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="editProduct(<?= $p['id'] ?>)" title="ແກ້ໄຂ">
+                            <i class="fas fa-edit"></i> ແກ້ໄຂ
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:#fed7d7;" onclick="deleteProduct(<?= $p['id'] ?>)" title="ລຶບ">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
         <?php endif; ?>
     </div>
@@ -2582,9 +2659,87 @@ function setupExcelDropZone() {
     }, false);
 }
 
+// Product View Mode (Table vs Card)
+function setProductViewMode(mode) {
+    const tableContainer = document.getElementById('productTableViewContainer');
+    const cardView = document.getElementById('productCardView');
+    const btnTable = document.getElementById('btnViewTable');
+    const btnCard = document.getElementById('btnViewCard');
+
+    if (!tableContainer || !cardView) return;
+
+    if (mode === 'card') {
+        tableContainer.style.display = 'none';
+        cardView.style.display = 'grid';
+        if (btnTable) btnTable.classList.remove('active');
+        if (btnCard) btnCard.classList.add('active');
+    } else {
+        tableContainer.style.display = 'block';
+        cardView.style.display = 'none';
+        if (btnTable) btnTable.classList.add('active');
+        if (btnCard) btnCard.classList.remove('active');
+    }
+
+    try {
+        localStorage.setItem('pos_products_view_mode', mode);
+    } catch(e) {}
+}
+
+// Combined Search Filter for both Table and Card Views
+function filterProductsCombined(inputId) {
+    if (typeof filterTable === 'function') {
+        filterTable(inputId, 'productTable');
+    }
+
+    const input = document.getElementById(inputId);
+    const container = document.getElementById('productCardView');
+    if (!input || !container) return;
+
+    const filter = input.value.toLowerCase().trim();
+    const cards = container.querySelectorAll('.product-item-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const match = text.includes(filter);
+        card.style.display = match ? 'flex' : 'none';
+        if (match) visible++;
+    });
+
+    let emptyEl = container.querySelector('.no-filter-card-results');
+    if (visible === 0 && cards.length > 0) {
+        if (!emptyEl) {
+            emptyEl = document.createElement('div');
+            emptyEl.className = 'no-filter-card-results empty-state';
+            emptyEl.style.gridColumn = '1 / -1';
+            emptyEl.style.padding = '40px 20px';
+            emptyEl.style.textAlign = 'center';
+            emptyEl.innerHTML = '<i class="fas fa-search" style="font-size:2rem;color:var(--text-light);margin-bottom:10px;"></i><p>ບໍ່ພົບສິນຄ້າທີ່ກົງກັບຄຳຄົ້ນຫາ</p>';
+            container.appendChild(emptyEl);
+        }
+        emptyEl.style.display = 'block';
+    } else if (emptyEl) {
+        emptyEl.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadBarcodePrinters();
     setupExcelDropZone();
+
+    // Auto-detect or restore products view mode
+    try {
+        const savedMode = localStorage.getItem('pos_products_view_mode');
+        if (savedMode === 'card' || savedMode === 'table') {
+            setProductViewMode(savedMode);
+        } else if (window.innerWidth <= 768) {
+            setProductViewMode('card');
+        } else {
+            setProductViewMode('table');
+        }
+    } catch(e) {
+        if (window.innerWidth <= 768) setProductViewMode('card');
+    }
 });
 </script>
 

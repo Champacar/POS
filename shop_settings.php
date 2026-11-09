@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $shopName = $_POST['shop_name'] ?? 'ຮ້ານຂາຍຢາດີ';
         $shopNameEn = $_POST['shop_name_en'] ?? '';
+        $companyName = trim($_POST['company_name'] ?? '');
+        $taxId = trim($_POST['tax_id'] ?? '');
+        $taxInvoicePrefix = trim($_POST['tax_invoice_prefix'] ?? 'TAX-');
         $address = $_POST['address'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $email = $_POST['email'] ?? '';
@@ -135,10 +138,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        $stmt = $db->prepare("UPDATE shop_settings SET shop_name = ?, shop_name_en = ?, address = ?, phone = ?, email = ?, open_time = ?, close_time = ?, show_in_receipt = ?, receipt_size = ?, tax_rate = ?, tax_type = ?, logo = ?, favicon = ?, footer_image = ?, qr_code = ?, cfd_media = ?, enable_multi_currency = ?, exchange_rate_thb = ?, exchange_rate_usd = ?, enable_cash_drawer = ?, cash_drawer_mode = ?, enable_dynamic_qr = ?, bank_name = ?, bank_account_number = ?, bank_account_name = ?, qr_payload = ?, qr_mode = ?, qr_uri_scheme = ? WHERE id = 1");
+        $stmt = $db->prepare("UPDATE shop_settings SET shop_name = ?, shop_name_en = ?, company_name = ?, tax_id = ?, tax_invoice_prefix = ?, address = ?, phone = ?, email = ?, open_time = ?, close_time = ?, show_in_receipt = ?, receipt_size = ?, tax_rate = ?, tax_type = ?, logo = ?, favicon = ?, footer_image = ?, qr_code = ?, cfd_media = ?, enable_multi_currency = ?, exchange_rate_thb = ?, exchange_rate_usd = ?, enable_cash_drawer = ?, cash_drawer_mode = ?, enable_dynamic_qr = ?, bank_name = ?, bank_account_number = ?, bank_account_name = ?, qr_payload = ?, qr_mode = ?, qr_uri_scheme = ? WHERE id = 1");
         $stmt->execute([
             $shopName,
             $shopNameEn,
+            $companyName,
+            $taxId,
+            $taxInvoicePrefix,
             $address,
             $phone,
             $email,
@@ -222,547 +228,662 @@ include 'includes/sidebar.php';
         <form method="POST" action="" enctype="multipart/form-data" onsubmit="const btn = this.querySelector('button[type=submit]'); if(btn){ btn.disabled=true; btn.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> ກຳລັງບັນທຶກ...'; }">
             <?= csrfField() ?>
             <div class="settings-layout">
-                <!-- Left: Form Card -->
-                <div class="card settings-form-card">
-                    <div class="card-header-flex">
-                        <h3 class="card-section-title">ລາຍລະອຽດຂໍ້ມູນຮ້ານ</h3>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                <!-- Left: Form Column with Sub-tabs -->
+                <div class="settings-left-col">
+                    <!-- Sub-tabs Navigation Bar -->
+                    <div class="tabs settings-tabs" style="margin-bottom: 20px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; gap: 8px;">
+                        <button type="button" class="tab active" onclick="switchSettingsTab('general')" id="tab-btn-general">
+                            <i class="fas fa-store"></i> 1. ຂໍ້ມູນຮ້ານ & ຮູບພາບ
+                        </button>
+                        <button type="button" class="tab" onclick="switchSettingsTab('tax')" id="tab-btn-tax">
+                            <i class="fas fa-file-invoice-dollar"></i> 2. ພາສີ & ໃບບິນ
+                        </button>
+                        <button type="button" class="tab" onclick="switchSettingsTab('currency-drawer')" id="tab-btn-currency-drawer">
+                            <i class="fas fa-coins"></i> 3. ສະກຸນເງິນ & ລິ້ນຊັກ
+                        </button>
+                        <button type="button" class="tab" onclick="switchSettingsTab('hardware')" id="tab-btn-hardware">
+                            <i class="fas fa-print"></i> 4. ເຄື່ອງພິມ & Hardware
+                        </button>
+                        <button type="button" class="tab" onclick="switchSettingsTab('payment-cfd')" id="tab-btn-payment-cfd">
+                            <i class="fas fa-qrcode"></i> 5. OnePay QR & ຈໍລູກຄ້າ
                         </button>
                     </div>
-                    
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ຊື່ຮ້ານ (ພາສາລາວ) *</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-store input-left-icon"></i>
-                                <input type="text" class="form-control" name="shop_name" id="inputShopName" value="<?= sanitize($settings['shop_name'] ?? '') ?>" required oninput="updateReceiptPreview()">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ຊື່ຮ້ານ (ພາສາອັງກິດ)</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-store input-left-icon"></i>
-                                <input type="text" class="form-control" name="shop_name_en" id="inputShopNameEn" value="<?= sanitize($settings['shop_name_en'] ?? '') ?>" oninput="updateReceiptPreview()">
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ທີ່ຢູ່ / ສະຖານທີ່</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-map-marker-alt input-left-icon"></i>
-                                <input type="text" class="form-control" name="address" id="inputAddress" value="<?= sanitize($settings['address'] ?? '') ?>" oninput="updateReceiptPreview()">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ເບີໂທລະສັບ</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-phone input-left-icon"></i>
-                                <input type="text" class="form-control" name="phone" id="inputPhone" value="<?= sanitize($settings['phone'] ?? '') ?>" oninput="updateReceiptPreview()">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ອີເມວ</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-envelope input-left-icon"></i>
-                                <input type="email" class="form-control" name="email" id="inputEmail" value="<?= sanitize($settings['email'] ?? '') ?>">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">ເວລາເປີດຮ້ານ</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-clock input-left-icon"></i>
-                                <select class="form-control" name="open_time" id="inputOpenTime" onchange="updateReceiptPreview()">
-                                    <?php for ($h = 0; $h < 24; $h++): ?>
-                                        <?php $t = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00'; ?>
-                                        <option value="<?= $t ?>" <?= ($settings['open_time'] ?? '08:00') === $t ? 'selected' : '' ?>><?= $t ?></option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ເວລາປິດຮ້ານ</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-clock input-left-icon"></i>
-                                <select class="form-control" name="close_time" id="inputCloseTime" onchange="updateReceiptPreview()">
-                                    <?php for ($h = 0; $h < 24; $h++): ?>
-                                        <?php $t = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00'; ?>
-                                        <option value="<?= $t ?>" <?= ($settings['close_time'] ?? '20:00') === $t ? 'selected' : '' ?>><?= $t ?></option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ສະແດງໃນໃບບິນ</label>
-                            <div style="display:flex;align-items:center;height:40px;">
-                                <label class="switch-toggle">
-                                    <input type="checkbox" name="show_in_receipt" id="inputShowInReceipt" value="1" <?= ($settings['show_in_receipt'] ?? 1) ? 'checked' : '' ?> onchange="updateReceiptPreview()">
-                                    <span class="slider-round"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ແພັກເກັດການໃຊ້ງານ</label>
-                            <div class="input-icon-wrapper">
-                                <i class="fas fa-shield-alt input-left-icon" style="color:var(--primary);"></i>
-                                <input type="text" class="form-control" value="ພຣີມຽມ" readonly style="background:#f4f6f8;font-weight:600;color:var(--primary);cursor:default;">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ຂະໜາດໃບບິນ</label>
-                            <div class="segmented-control">
-                                <input type="radio" id="size56" name="receipt_size" value="56mm" <?= ($settings['receipt_size'] ?? '80mm') === '56mm' ? 'checked' : '' ?> onchange="changeReceiptSize('56mm')">
-                                <label for="size56">56mm</label>
-                                
-                                <input type="radio" id="size80" name="receipt_size" value="80mm" <?= ($settings['receipt_size'] ?? '80mm') === '80mm' ? 'checked' : '' ?> onchange="changeReceiptSize('80mm')">
-                                <label for="size80">80mm</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ປະເພດອາກອນ (VAT)</label>
-                            <div class="segmented-control">
-                                <input type="radio" id="tax_included" name="tax_type" value="included" <?= ($settings['tax_type'] ?? 'excluded') === 'included' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
-                                <label for="tax_included">ລວມໃນ</label>
-                                
-                                <input type="radio" id="tax_excluded" name="tax_type" value="excluded" <?= ($settings['tax_type'] ?? 'excluded') === 'excluded' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
-                                <label for="tax_excluded">ນອກ</label>
-                                
-                                <input type="radio" id="tax_none" name="tax_type" value="none" <?= ($settings['tax_type'] ?? 'excluded') === 'none' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
-                                <label for="tax_none">ບໍ່ມີ</label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ອັດຕາອາກອນ (%)</label>
-                            <div class="input-suffix-wrapper">
-                                <input type="number" class="form-control" name="tax_rate" id="inputTaxRate" value="<?= $settings['tax_rate'] ?? 10 ?>" min="0" max="100" step="0.01" oninput="updateReceiptPreview()">
-                                <span class="input-suffix">%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="form-divider">
-
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <label class="form-label" style="margin-bottom:0;">ໂລໂກ້ຮ້ານ</label>
-                                <button type="button" id="btnDelete_logo" class="btn-clear-upload" onclick="clearUpload('logo', event)" title="ລຶບໂລໂກ້" style="<?= empty($settings['logo']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i> ລຶບ
+                    <!-- Pane 1: General Info & Branding -->
+                    <div id="settings-pane-general" class="settings-tab-pane">
+                        <div class="card settings-form-card">
+                            <div class="card-header-flex">
+                                <div>
+                                    <h3 class="card-section-title"><i class="fas fa-store" style="color:var(--primary); margin-right:6px;"></i> ຂໍ້ມູນຮ້ານ & ຮູບພາບ</h3>
+                                    <p style="font-size:12.5px; color:var(--text-medium); margin-top:2px;">ກຳນົດຊື່ຮ້ານ, ທີ່ຢູ່, ເບີໂທ, ເວລາເປີດ-ປິດ ແລະ ຮູບພາບໂລໂກ້</p>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
                                 </button>
                             </div>
-                            <input type="hidden" name="existing_logo" value="<?= $settings['logo'] ?? '' ?>">
-                            <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('logoFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-                                <button type="button" id="floatDelete_logo" class="btn-remove-upload" onclick="clearUpload('logo', event)" title="ລຶບຮູບ" style="<?= empty($settings['logo']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                                <input type="file" id="logoFileInput" name="logo" style="display:none;" accept="image/*" onchange="previewUpload(this, 'logoPreview')">
-                                <div class="upload-preview-container" id="logoPreview">
-                                    <?php if (!empty($settings['logo'])): ?>
-                                        <img src="assets/images/<?= $settings['logo'] ?>" alt="Logo">
-                                    <?php else: ?>
-                                        <div class="upload-placeholder">
-                                            <i class="far fa-image"></i>
-                                            <span>ເລືອກໂລໂກ້<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 2MB</small></span>
+                            
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ຊື່ຮ້ານ (ພາສາລາວ) *</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-store input-left-icon"></i>
+                                        <input type="text" class="form-control" name="shop_name" id="inputShopName" value="<?= sanitize($settings['shop_name'] ?? '') ?>" required oninput="updateReceiptPreview()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ຊື່ຮ້ານ (ພາສາອັງກິດ)</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-store input-left-icon"></i>
+                                        <input type="text" class="form-control" name="shop_name_en" id="inputShopNameEn" value="<?= sanitize($settings['shop_name_en'] ?? '') ?>" oninput="updateReceiptPreview()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ທີ່ຢູ່ / ສະຖານທີ່</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-map-marker-alt input-left-icon"></i>
+                                        <input type="text" class="form-control" name="address" id="inputAddress" value="<?= sanitize($settings['address'] ?? '') ?>" oninput="updateReceiptPreview()">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ເບີໂທລະສັບ</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-phone input-left-icon"></i>
+                                        <input type="text" class="form-control" name="phone" id="inputPhone" value="<?= sanitize($settings['phone'] ?? '') ?>" oninput="updateReceiptPreview()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ອີເມວ</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-envelope input-left-icon"></i>
+                                        <input type="email" class="form-control" name="email" id="inputEmail" value="<?= sanitize($settings['email'] ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-3">
+                                <div class="form-group">
+                                    <label class="form-label">ເວລາເປີດຮ້ານ</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-clock input-left-icon"></i>
+                                        <select class="form-control" name="open_time" id="inputOpenTime" onchange="updateReceiptPreview()">
+                                            <?php for ($h = 0; $h < 24; $h++): ?>
+                                                <?php $t = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00'; ?>
+                                                <option value="<?= $t ?>" <?= ($settings['open_time'] ?? '08:00') === $t ? 'selected' : '' ?>><?= $t ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ເວລາປິດຮ້ານ</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-clock input-left-icon"></i>
+                                        <select class="form-control" name="close_time" id="inputCloseTime" onchange="updateReceiptPreview()">
+                                            <?php for ($h = 0; $h < 24; $h++): ?>
+                                                <?php $t = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00'; ?>
+                                                <option value="<?= $t ?>" <?= ($settings['close_time'] ?? '20:00') === $t ? 'selected' : '' ?>><?= $t ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ສະແດງເວລາໃນໃບບິນ</label>
+                                    <div style="display:flex;align-items:center;height:40px;">
+                                        <label class="switch-toggle">
+                                            <input type="checkbox" name="show_in_receipt" id="inputShowInReceipt" value="1" <?= ($settings['show_in_receipt'] ?? 1) ? 'checked' : '' ?> onchange="updateReceiptPreview()">
+                                            <span class="slider-round"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="form-divider">
+
+                            <div class="form-row-3">
+                                <div class="form-group">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                        <label class="form-label" style="margin-bottom:0;">ໂລໂກ້ຮ້ານ</label>
+                                        <button type="button" id="btnDelete_logo" class="btn-clear-upload" onclick="clearUpload('logo', event)" title="ລຶບໂລໂກ້" style="<?= empty($settings['logo']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i> ລຶບ
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="existing_logo" value="<?= $settings['logo'] ?? '' ?>">
+                                    <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('logoFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+                                        <button type="button" id="floatDelete_logo" class="btn-remove-upload" onclick="clearUpload('logo', event)" title="ລຶບຮູບ" style="<?= empty($settings['logo']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <input type="file" id="logoFileInput" name="logo" style="display:none;" accept="image/*" onchange="previewUpload(this, 'logoPreview')">
+                                        <div class="upload-preview-container" id="logoPreview">
+                                            <?php if (!empty($settings['logo'])): ?>
+                                                <img src="assets/images/<?= $settings['logo'] ?>" alt="Logo">
+                                            <?php else: ?>
+                                                <div class="upload-placeholder">
+                                                    <i class="far fa-image"></i>
+                                                    <span>ເລືອກໂລໂກ້<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 2MB</small></span>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <label class="form-label" style="margin-bottom:0;">ໄອຄອນເວັບ (Favicon)</label>
-                                <button type="button" id="btnDelete_favicon" class="btn-clear-upload" onclick="clearUpload('favicon', event)" title="ລຶບ Favicon" style="<?= empty($settings['favicon']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i> ລຶບ
-                                </button>
-                            </div>
-                            <input type="hidden" name="existing_favicon" value="<?= $settings['favicon'] ?? '' ?>">
-                            <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('faviconFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-                                <button type="button" id="floatDelete_favicon" class="btn-remove-upload" onclick="clearUpload('favicon', event)" title="ລຶບຮູບ" style="<?= empty($settings['favicon']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                                <input type="file" id="faviconFileInput" name="favicon" style="display:none;" accept="image/*" onchange="previewUpload(this, 'faviconPreview')">
-                                <div class="upload-preview-container" id="faviconPreview">
-                                    <?php if (!empty($settings['favicon'])): ?>
-                                        <img src="assets/images/<?= $settings['favicon'] ?>" alt="Favicon">
-                                    <?php else: ?>
-                                        <div class="upload-placeholder">
-                                            <i class="far fa-image"></i>
-                                            <span>ເລືອກ Favicon<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 1MB</small></span>
+                                <div class="form-group">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                        <label class="form-label" style="margin-bottom:0;">ໄອຄອນເວັບ (Favicon)</label>
+                                        <button type="button" id="btnDelete_favicon" class="btn-clear-upload" onclick="clearUpload('favicon', event)" title="ລຶບ Favicon" style="<?= empty($settings['favicon']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i> ລຶບ
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="existing_favicon" value="<?= $settings['favicon'] ?? '' ?>">
+                                    <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('faviconFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+                                        <button type="button" id="floatDelete_favicon" class="btn-remove-upload" onclick="clearUpload('favicon', event)" title="ລຶບຮູບ" style="<?= empty($settings['favicon']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <input type="file" id="faviconFileInput" name="favicon" style="display:none;" accept="image/*" onchange="previewUpload(this, 'faviconPreview')">
+                                        <div class="upload-preview-container" id="faviconPreview">
+                                            <?php if (!empty($settings['favicon'])): ?>
+                                                <img src="assets/images/<?= $settings['favicon'] ?>" alt="Favicon">
+                                            <?php else: ?>
+                                                <div class="upload-placeholder">
+                                                    <i class="far fa-image"></i>
+                                                    <span>ເລືອກ Favicon<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 1MB</small></span>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <label class="form-label" style="margin-bottom:0;">ຮູບທ້າຍໃບບິນ</label>
-                                <button type="button" id="btnDelete_footer" class="btn-clear-upload" onclick="clearUpload('footer', event)" title="ລຶບຮູບທ້າຍໃບບິນ" style="<?= empty($settings['footer_image']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i> ລຶບ
-                                </button>
-                            </div>
-                            <input type="hidden" name="existing_footer_image" value="<?= $settings['footer_image'] ?? '' ?>">
-                            <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('footerFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-                                <button type="button" id="floatDelete_footer" class="btn-remove-upload" onclick="clearUpload('footer', event)" title="ລຶບຮູບ" style="<?= empty($settings['footer_image']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                                <input type="file" id="footerFileInput" name="footer_image" style="display:none;" accept="image/*" onchange="previewUpload(this, 'footerPreview')">
-                                <div class="upload-preview-container" id="footerPreview">
-                                    <?php if (!empty($settings['footer_image'])): ?>
-                                        <img src="assets/images/<?= $settings['footer_image'] ?>" alt="Footer Image">
-                                    <?php else: ?>
-                                        <div class="upload-placeholder">
-                                            <i class="far fa-image"></i>
-                                            <span>ເລືອກຮູບ<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 2MB</small></span>
+                                <div class="form-group">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                        <label class="form-label" style="margin-bottom:0;">ຮູບທ້າຍໃບບິນ</label>
+                                        <button type="button" id="btnDelete_footer" class="btn-clear-upload" onclick="clearUpload('footer', event)" title="ລຶບຮູບທ້າຍໃບບິນ" style="<?= empty($settings['footer_image']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i> ລຶບ
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="existing_footer_image" value="<?= $settings['footer_image'] ?? '' ?>">
+                                    <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('footerFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+                                        <button type="button" id="floatDelete_footer" class="btn-remove-upload" onclick="clearUpload('footer', event)" title="ລຶບຮູບ" style="<?= empty($settings['footer_image']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <input type="file" id="footerFileInput" name="footer_image" style="display:none;" accept="image/*" onchange="previewUpload(this, 'footerPreview')">
+                                        <div class="upload-preview-container" id="footerPreview">
+                                            <?php if (!empty($settings['footer_image'])): ?>
+                                                <img src="assets/images/<?= $settings['footer_image'] ?>" alt="Footer Image">
+                                            <?php else: ?>
+                                                <div class="upload-placeholder">
+                                                    <i class="far fa-image"></i>
+                                                    <span>ເລືອກຮູບ<br><small>ໄຟລ໌ໃຫຍ່ບໍ່ເກີນ 2MB</small></span>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Multi-Currency & Cash Drawer Settings Card -->
-                <div class="card settings-form-card" style="margin-top: 24px;">
-                    <div class="card-header-flex">
-                        <h3 class="card-section-title"><i class="fas fa-coins" style="color:var(--primary); margin-right:6px;"></i> ລະບົບຫຼາຍສະກຸນເງິນ (Multi-Currency)</h3>
-                        <label class="switch-toggle" title="ເປີດ/ປິດ ຮັບເງິນຫຼາຍສະກຸນ">
-                            <input type="checkbox" name="enable_multi_currency" id="inputEnableMultiCurrency" value="1" <?= ($settings['enable_multi_currency'] ?? 1) ? 'checked' : '' ?>>
-                            <span class="slider-round"></span>
-                        </label>
-                    </div>
-
-                    <p style="font-size: 13.5px; color: #5e6c84; margin-bottom: 16px;">
-                        ຮອງຮັບການຮັບເງິນສົດເປັນ <strong>ເງິນບາດ (THB)</strong> ແລະ <strong>ເງິນໂດລາ (USD)</strong> ທີ່ຈຸດຂາຍ (POS). ຍອດບັນຊີຫຼັກ, ລາຍງານຍອດຂາຍ ແລະ ລາຄາຢາຈະຍັງຄົງຄິດໄລ່ເປັນ <strong>ເງິນກີບ (LAK)</strong> ເພື່ອຄວາມຖືກຕ້ອງທາງບັນຊີ.
-                    </p>
-
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">ອັດຕາແລກປ່ຽນ 1 ບາດ (THB) ເທົ່າກັບກີບ *</label>
-                            <div class="input-suffix-wrapper">
-                                <input type="number" class="form-control" name="exchange_rate_thb" id="inputExchangeRateThb" value="<?= htmlspecialchars($settings['exchange_rate_thb'] ?? '680.00') ?>" step="0.01" min="1" required>
-                                <span class="input-suffix">ກີບ (LAK)</span>
-                            </div>
-                            <small class="text-muted">ຕົວຢ່າງ: 1 ฿ = 680 ₭ (ຍອດ 100,000 ກີບ ≈ 147.06 ฿)</small>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">ອັດຕາແລກປ່ຽນ 1 ໂດລາ (USD) ເທົ່າກັບກີບ *</label>
-                            <div class="input-suffix-wrapper">
-                                <input type="number" class="form-control" name="exchange_rate_usd" id="inputExchangeRateUsd" value="<?= htmlspecialchars($settings['exchange_rate_usd'] ?? '22000.00') ?>" step="0.01" min="1" required>
-                                <span class="input-suffix">ກີບ (LAK)</span>
-                            </div>
-                            <small class="text-muted">ຕົວຢ່າງ: 1 $ = 22,000 ₭ (ຍອດ 110,000 ກີບ = 5.00 $)</small>
-                        </div>
-                    </div>
-
-                    <hr class="form-divider" style="margin: 20px 0;">
-
-                    <div class="card-header-flex" style="margin-bottom: 12px;">
-                        <h3 class="card-section-title"><i class="fas fa-cash-register" style="color:var(--primary); margin-right:6px;"></i> ລະບົບລິ້ນຊັກເງິນ (Cash Drawer)</h3>
-                        <label class="switch-toggle" title="ເປີດ/ປິດ ເປີດລິ້ນຊັກເງິນອັດຕະໂນມັດ">
-                            <input type="checkbox" name="enable_cash_drawer" id="inputEnableCashDrawer" value="1" <?= ($settings['enable_cash_drawer'] ?? 1) ? 'checked' : '' ?>>
-                            <span class="slider-round"></span>
-                        </label>
-                    </div>
-
-                    <div class="form-row-2" style="align-items: center; gap: 20px;">
-                        <div>
-                            <p style="font-size: 13.5px; color: var(--text-dark); margin-bottom: 6px; font-weight: 600;">
-                                ເປີດລິ້ນຊັກເງິນອັດຕະໂນມັດ ເມື່ອຂາຍເງິນສົດ (Auto Kick)
-                            </p>
-                            <p style="font-size: 12.5px; color: #5e6c84; margin-bottom: 0;">
-                                ລິ້ນຊັກເງິນທີ່ຕໍ່ຜ່ານສາຍ RJ11 ເຂົ້າຊ່ອງ DK (Drawer Kick) ຫຼັງເຄື່ອງພິມໃບບິນ ຈະເປີດອອກເອງອັດຕະໂນມັດເມື່ອພິມບິນເງິນສົດ ຫຼື ກົດປຸ່ມລັດ <strong>F7</strong> ທີ່ໜ້າ POS.
-                            </p>
-                        </div>
-                        <div style="text-align: right;">
-                            <button type="button" class="btn btn-outline" onclick="testCashDrawer()" style="min-height: 42px;">
-                                <i class="fas fa-external-link-alt"></i> ທົດສອບເປີດລິ້ນຊັກ (Test Kick)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hardware, QZ Tray & Thermal Printing Card -->
-                <div class="card settings-form-card" style="margin-top: 24px;">
-                    <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
-                        <div>
-                            <h3 class="card-section-title" style="margin-bottom:4px;">
-                                <i class="fas fa-print" style="color:var(--primary); margin-right:6px;"></i> ລະບົບເຊື່ອມຕໍ່ Hardware & ເຄື່ອງພິມ (QZ Tray / ESC/POS)
-                            </h3>
-                            <p style="font-size:12.5px; color:#5e6c84; margin-bottom:0;">
-                                ຮອງຮັບການພິມໃບບິນອັດຕະໂນມັດ, ເຕະລິ້ນຊັກເກັບເງິນ (RJ11), ສະແກນບາໂຄ້ດ ແລະ ພິມສະຫຼາກຢາຜ່ານ QZ Tray Local Bridge
-                            </p>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span id="qzStatusBadge" class="badge badge-secondary" style="font-size:12px; padding:6px 12px; font-weight:600;">
-                                <i class="fas fa-circle-notch fa-spin"></i> ກວດສອບ QZ Tray...
-                            </span>
-                            <button type="button" class="btn btn-outline btn-sm" onclick="initHardwareSettingsUI(true)">
-                                <i class="fas fa-sync-alt"></i> ເຊື່ອມຕໍ່ໃໝ່
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-top:16px;">
-                        <div class="form-row-3" style="gap:16px;">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" style="font-weight:700;">
-                                    🧾 ເຄື່ອງພິມໃບບິນ (Receipt 80mm/58mm)
-                                </label>
-                                <select class="form-control" id="hwReceiptPrinter" onchange="saveHardwarePref('pos_receipt_printer', this.value)">
-                                    <option value="">-- ເລືອກເຄື່ອງພິມໃບບິນ --</option>
-                                </select>
-                                <small class="text-muted">ໃຊ້ສໍາລັບພິມໃບບິນຂາຍ ແລະ ສັ່ງເຕະລິ້ນຊັກເງິນ</small>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" style="font-weight:700;">
-                                    🏷️ ເຄື່ອງພິມສະຫຼາກຢາ (Medicine Labels)
-                                </label>
-                                <select class="form-control" id="hwLabelPrinter" onchange="saveHardwarePref('pos_label_printer', this.value)">
-                                    <option value="">-- ເລືອກເຄື່ອງພິມສະຫຼາກຢາ --</option>
-                                </select>
-                                <small class="text-muted">ສະຕິກເກີ 8x5cm, 7x5cm, 5x3cm (Grozziie / Xprinter)</small>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label" style="font-weight:700;">
-                                    📊 ເຄື່ອງພິມບາໂຄ້ດ (Barcode Stickers)
-                                </label>
-                                <select class="form-control" id="hwBarcodePrinter" onchange="saveHardwarePref('pos_barcode_printer', this.value)">
-                                    <option value="">-- ເລືອກເຄື່ອງພິມບາໂຄ້ດ --</option>
-                                </select>
-                                <small class="text-muted">ໃຊ້ສຳລັບພິມບາໂຄ້ດຕິດສິນຄ້າໃນຄັງ</small>
-                            </div>
-                        </div>
-
-                        <hr class="form-divider" style="margin: 16px 0;">
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                            <div style="display:flex; align-items:center; gap:20px;">
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--text-dark); margin-bottom:0;">
-                                    <input type="checkbox" id="hwAutoPrintToggle" onchange="saveHardwarePref('pos_auto_print', this.checked ? 'true' : 'false')" style="width:17px; height:17px; accent-color:var(--primary);">
-                                    <span>ພິມໃບບິນອັດຕະໂນມັດ (Auto Print on Checkout)</span>
-                                </label>
-                            </div>
-
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintReceipt()">
-                                    <i class="fas fa-receipt"></i> ທົດສອບພິມໃບບິນ
-                                </button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintLabel()">
-                                    <i class="fas fa-tag"></i> ທົດສອບພິມສະຫຼາກຢາ
-                                </button>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="testCashDrawer()">
-                                    <i class="fas fa-cash-register"></i> ທົດສອບເຕະລິ້ນຊັກ
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <div style="margin-top:10px; font-size:12px; color:#5e6c84;">
-                        <i class="fas fa-info-circle"></i> ຖ້າໃຊ້ງານຜ່ານ Browser ແລ້ວສະຖານະຂຶ້ນວ່າ "ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່", ທ່ານສາມາດດາວໂຫຼດ ແລະ ເປີດໂປຣແກຣມ <a href="https://qz.io/download/" target="_blank" style="color:var(--primary); font-weight:600; text-decoration:underline;">QZ Tray (Free)</a> ຢູ່ເຄື່ອງຄອມພິວເຕີຂອງທ່ານເພື່ອໃຫ້ລະບົບພິມງຽບໂດຍບໍ່ຕ້ອງຜ່ານໜ້າຕ່າງ Preview.
-                    </div>
-                </div>
 
-                <!-- Payment & CFD Settings Card -->
-                <div class="card settings-form-card" style="margin-top: 24px;">
-                    <div class="card-header-flex">
-                        <h3 class="card-section-title">ການຊຳລະເງິນ & ໜ້າຈໍລູກຄ້າ (CFD)</h3>
-                        <a href="<?= BASE_URL ?>customer_display.php" target="_blank" class="btn btn-outline">
-                            <i class="fas fa-desktop"></i> ເປີດໜ້າຈໍລູກຄ້າ
-                        </a>
-                    </div>
-
-                    <!-- Dynamic LAO QR Box -->
-                    <div style="background:#f0f7ff; border:1px solid #cce0ff; border-radius:10px; padding:18px 20px; margin-bottom:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div>
-                                <h4 style="margin:0; font-size:1.05rem; font-weight:700; color:#0052cc; display:flex; align-items:center; gap:8px;">
-                                    <i class="fas fa-bolt" style="color:#ffab00;"></i> ລະບົບ Dynamic LAO QR ພ້ອມຝັງຍອດເງິນອັດຕະໂນມັດ (EMVCo)
-                                </h4>
-                                <p style="margin:4px 0 0 0; font-size:0.85rem; color:#5e6c84;">
-                                    ສ້າງ QR Code ທີ່ລະບຸຍອດເງິນພໍດີແຕ່ລະບິນ ລູກຄ້າສະແກນດ້ວຍແອັບ BCEL One ຫຼື ທະນາຄານອື່ນ ແລ້ວຍອດເງິນຂຶ້ນທັນທີ ໂດຍບໍ່ຕ້ອງພິມເອງ (100% Offline)
-                                </p>
+                    <!-- Pane 2: Tax & Invoicing -->
+                    <div id="settings-pane-tax" class="settings-tab-pane" style="display:none;">
+                        <div class="card settings-form-card">
+                            <div class="card-header-flex">
+                                <div>
+                                    <h3 class="card-section-title"><i class="fas fa-file-invoice-dollar" style="color:var(--primary); margin-right:6px;"></i> ພາສີ & ໃບກຳກັບພາສີ (Tax & Official Invoicing)</h3>
+                                    <p style="font-size:12.5px; color:var(--text-medium); margin-top:2px;">ກຳນົດອັດຕາອາກອນມູນຄ່າເພີ່ມ (VAT), ເລກປະຈຳຕົວຜູ້ເສຍອາກອນ ແລະ ຂະໜາດໃບບິນ</p>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
                             </div>
-                            <label class="switch" style="margin-left:16px;">
-                                <input type="checkbox" name="enable_dynamic_qr" id="inputEnableDynamicQr" value="1" <?= !empty($settings['enable_dynamic_qr']) ? 'checked' : '' ?> onchange="toggleDynamicQrFields()">
-                                <span class="slider"></span>
-                            </label>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ຊື່ບໍລິສັດ / ນິຕິບຸກຄົນ (ສຳລັບໃບກຳກັບພາສີ)</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-building input-left-icon"></i>
+                                        <input type="text" class="form-control" name="company_name" id="inputCompanyName" value="<?= sanitize($settings['company_name'] ?? '') ?>" placeholder="ຊື່ບໍລິສັດ/ຮ້ານ ຕາມໃບທະບຽນວິສາຫະກິດ">
+                                    </div>
+                                    <small class="text-muted">ຖ້າວ່າງໄວ້ ລະບົບຈະໃຊ້ຊື່ຮ້ານຄ້າພາສາລາວແທນ</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ເລກປະຈຳຕົວຜູ້ເສຍອາກອນ (Tax ID / TIN)</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-id-card input-left-icon"></i>
+                                        <input type="text" class="form-control" name="tax_id" id="inputTaxId" value="<?= sanitize($settings['tax_id'] ?? '') ?>" placeholder="ເລກປະຈຳຕົວຜູ້ເສຍອາກອນ (Tax ID)">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ຄຳນຳໜ້າເລກໃບກຳກັບພາສີ (Prefix)</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-hashtag input-left-icon"></i>
+                                        <input type="text" class="form-control" name="tax_invoice_prefix" id="inputTaxInvoicePrefix" value="<?= sanitize($settings['tax_invoice_prefix'] ?? 'TAX-') ?>" placeholder="TAX-">
+                                    </div>
+                                    <small class="text-muted">ຕົວຢ່າງ: TAX-20261109-0001</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ຂະໜາດໃບບິນຄວາມຮ້ອນ (Receipt Paper Size)</label>
+                                    <div class="segmented-control">
+                                        <input type="radio" id="size56" name="receipt_size" value="56mm" <?= ($settings['receipt_size'] ?? '80mm') === '56mm' ? 'checked' : '' ?> onchange="changeReceiptSize('56mm')">
+                                        <label for="size56">56mm (ມ້ວນນ້ອຍ)</label>
+                                        
+                                        <input type="radio" id="size80" name="receipt_size" value="80mm" <?= ($settings['receipt_size'] ?? '80mm') === '80mm' ? 'checked' : '' ?> onchange="changeReceiptSize('80mm')">
+                                        <label for="size80">80mm (ມາດຕະຖານ)</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label class="form-label">ປະເພດອາກອນມູນຄ່າເພີ່ມ (VAT Method)</label>
+                                    <div class="segmented-control">
+                                        <input type="radio" id="tax_included" name="tax_type" value="included" <?= ($settings['tax_type'] ?? 'excluded') === 'included' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
+                                        <label for="tax_included">ລວມໃນລາຄາຢາ</label>
+                                        
+                                        <input type="radio" id="tax_excluded" name="tax_type" value="excluded" <?= ($settings['tax_type'] ?? 'excluded') === 'excluded' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
+                                        <label for="tax_excluded">ບວກຕື່ມນອກ</label>
+                                        
+                                        <input type="radio" id="tax_none" name="tax_type" value="none" <?= ($settings['tax_type'] ?? 'excluded') === 'none' ? 'checked' : '' ?> onchange="updateReceiptPreview()">
+                                        <label for="tax_none">ບໍ່ຄິດໄລ່</label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ອັດຕາອາກອນ (%)</label>
+                                    <div class="input-suffix-wrapper">
+                                        <input type="number" class="form-control" name="tax_rate" id="inputTaxRate" value="<?= $settings['tax_rate'] ?? 10 ?>" min="0" max="100" step="0.01" oninput="updateReceiptPreview()">
+                                        <span class="input-suffix">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
+                            </div>
                         </div>
+                    </div>
 
-                        <div id="dynamicQrFieldsContainer" style="display:<?= !empty($settings['enable_dynamic_qr']) ? 'block' : 'none' ?>; margin-top:16px; border-top:1px dashed #b3d4ff; padding-top:14px;">
-                            <div class="form-row-3" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
-                                <div class="form-group" style="margin-bottom:0;">
-                                    <label class="form-label" style="font-size:0.85rem; font-weight:600;">ທະນາຄານ / ແອັບ *</label>
-                                    <select class="form-control" name="bank_name" id="inputBankName">
-                                        <?php 
-                                        $currentBank = $settings['bank_name'] ?? 'BCEL One';
-                                        $banks = ['BCEL One', 'LDB Trust', 'JDB Yes', 'LaoVietBank', 'Hal-KB', 'Maruhan', 'Indochina Bank', 'ອື່ນໆ (LAPNet / Lao QR)'];
-                                        foreach ($banks as $b):
-                                        ?>
-                                        <option value="<?= $b ?>" <?= $currentBank === $b ? 'selected' : '' ?>><?= $b ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                    <!-- Pane 3: Currency & Cash Drawer -->
+                    <div id="settings-pane-currency-drawer" class="settings-tab-pane" style="display:none;">
+                        <div class="card settings-form-card">
+                            <div class="card-header-flex">
+                                <div>
+                                    <h3 class="card-section-title"><i class="fas fa-coins" style="color:var(--primary); margin-right:6px;"></i> ສະກຸນເງິນ & ລິ້ນຊັກເກັບເງິນ (Currency & Cash Drawer)</h3>
+                                    <p style="font-size:12.5px; color:var(--text-medium); margin-top:2px;">ກຳນົດອັດຕາແລກປ່ຽນເງິນບາດ (THB), ເງິນໂດລາ (USD) ແລະ ການຄວບຄຸມລິ້ນຊັກເງິນອັດຕະໂນມັດ</p>
                                 </div>
-                                <div class="form-group" style="margin-bottom:0;">
-                                    <label class="form-label" style="font-size:0.85rem; font-weight:600;">ເລກບັນຊີ / ເລກໂທລະສັບຜູກບັນຊີ *</label>
-                                    <input type="text" class="form-control" name="bank_account_number" id="inputBankAccountNumber" value="<?= htmlspecialchars($settings['bank_account_number'] ?? '') ?>" placeholder="010120000998877 ຫຼື 020XXXXXXXX">
-                                </div>
-                                <div class="form-group" style="margin-bottom:0;">
-                                    <label class="form-label" style="font-size:0.85rem; font-weight:600;">ຊື່ບັນຊີ / ຊື່ຮ້ານຄ້າ *</label>
-                                    <input type="text" class="form-control" name="bank_account_name" id="inputBankAccountName" value="<?= htmlspecialchars($settings['bank_account_name'] ?? '') ?>" placeholder="ຊື່ເຈົ້າຂອງບັນຊີ...">
-                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
                             </div>
 
-                            <!-- Row 2: QR Mode & URI Scheme -->
-                            <div class="form-row-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:14px;">
-                                <div class="form-group" style="margin-bottom:0;">
-                                    <label class="form-label" style="font-size:0.85rem; font-weight:600;">ມາດຕະຖານ / ຮູບແບບ QR Code</label>
-                                    <select class="form-control" name="qr_mode" id="inputQrMode">
-                                        <option value="auto" <?= ($settings['qr_mode'] ?? 'auto') === 'auto' ? 'selected' : '' ?>>ອັດຕະໂນມັດ (BCEL One + LAPNet ປະສົມ - ແນະນຳ)</option>
-                                        <option value="bcel" <?= ($settings['qr_mode'] ?? '') === 'bcel' ? 'selected' : '' ?>>BCEL One / OnePay ເທົ່ານັ້ນ (Tag 33 & 26)</option>
-                                        <option value="lapnet" <?= ($settings['qr_mode'] ?? '') === 'lapnet' ? 'selected' : '' ?>>LAPNet / LAO QR ແຫ່ງຊາດ (ທຸກທະນາຄານ)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end;">
-                                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; margin-bottom:10px;">
-                                        <input type="checkbox" name="qr_uri_scheme" id="inputQrUriScheme" value="1" <?= !empty($settings['qr_uri_scheme']) ? 'checked' : '' ?>>
-                                        <span>ຝັງຮູບແບບ <code>onepay://qr/</code> ສຳລັບແອັບ BCEL One</span>
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-bottom:20px;">
+                                <div class="card-header-flex" style="margin-bottom:8px;">
+                                    <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-dark);">
+                                        <i class="fas fa-money-bill-wave" style="color:var(--primary); margin-right:6px;"></i> ລະບົບຫຼາຍສະກຸນເງິນ (Multi-Currency)
+                                    </h4>
+                                    <label class="switch-toggle" title="ເປີດ/ປິດ ຮັບເງິນຫຼາຍສະກຸນ">
+                                        <input type="checkbox" name="enable_multi_currency" id="inputEnableMultiCurrency" value="1" <?= ($settings['enable_multi_currency'] ?? 1) ? 'checked' : '' ?>>
+                                        <span class="slider-round"></span>
                                     </label>
                                 </div>
-                            </div>
 
-                            <!-- Row 3: Raw Static QR Payload (Optional - Recommended for 100% genuine BCEL One) -->
-                            <div style="margin-top:14px; padding:12px; background:#fff; border:1px solid #cce0ff; border-radius:8px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                    <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0052cc; margin-bottom:0;">
-                                        <i class="fas fa-qrcode"></i> ລະຫັດ QR Code ຕົ້ນສະບັບຂອງຮ້ານ (Raw Static QR Payload - ທາງເລືອກແນະນຳ)
-                                    </label>
-                                    <button type="button" class="btn btn-sm btn-outline" onclick="validateStaticQrPayload()" style="font-size:0.78rem; padding:3px 8px;">
-                                        <i class="fas fa-search"></i> ກວດສອບລະຫັດ QR
-                                    </button>
-                                </div>
-                                <p style="font-size:0.78rem; color:#5e6c84; margin-bottom:6px;">
-                                    ຖ້າທ່ານມີ QR Code ຈາກແອັບ BCEL One (My QR ຫຼື OnePay) ສາມາດກັອບປີ້ຂໍ້ຄວາມ ຫຼື ສະແກນເອົາລະຫັດມາໃສ່ບ່ອນນີ້. ລະບົບຈະນຳໃຊ້ລະຫັດຮ້ານຄ້າຕົວຈິງຂອງທ່ານໄປຝັງຍອດເງິນອັດຕະໂນມັດ 100%:
+                                <p style="font-size: 13px; color: #5e6c84; margin-bottom: 16px;">
+                                    ຮອງຮັບການຮັບເງິນສົດເປັນ <strong>ເງິນບາດ (THB)</strong> ແລະ <strong>ເງິນໂດລາ (USD)</strong> ທີ່ຈຸດຂາຍ (POS). ຍອດບັນຊີຫຼັກ, ລາຍງານຍອດຂາຍ ແລະ ລາຄາຢາຈະຍັງຄົງຄິດໄລ່ເປັນ <strong>ເງິນກີບ (LAK)</strong> ເພື່ອຄວາມຖືກຕ້ອງທາງບັນຊີ.
                                 </p>
-                                <textarea class="form-control" name="qr_payload" id="inputQrPayload" rows="2" style="font-family:monospace; font-size:0.8rem;" placeholder="ຕົວຢ່າງ: 000201010211... ຫຼື onepay://qr/000201..."><?= htmlspecialchars($settings['qr_payload'] ?? '') ?></textarea>
-                                <div id="qrPayloadFeedback" style="display:none; margin-top:6px; font-size:0.82rem; padding:6px 10px; border-radius:6px;"></div>
+
+                                <div class="form-row-2">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label">ອັດຕາແລກປ່ຽນ 1 ບາດ (THB) ເທົ່າກັບກີບ *</label>
+                                        <div class="input-suffix-wrapper">
+                                            <input type="number" class="form-control" name="exchange_rate_thb" id="inputExchangeRateThb" value="<?= htmlspecialchars($settings['exchange_rate_thb'] ?? '680.00') ?>" step="0.01" min="1" required>
+                                            <span class="input-suffix">ກີບ (LAK)</span>
+                                        </div>
+                                        <small class="text-muted">ຕົວຢ່າງ: 1 ฿ = 680 ₭ (ຍອດ 100,000 ກີບ ≈ 147.06 ฿)</small>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label">ອັດຕາແລກປ່ຽນ 1 ໂດລາ (USD) ເທົ່າກັບກີບ *</label>
+                                        <div class="input-suffix-wrapper">
+                                            <input type="number" class="form-control" name="exchange_rate_usd" id="inputExchangeRateUsd" value="<?= htmlspecialchars($settings['exchange_rate_usd'] ?? '22000.00') ?>" step="0.01" min="1" required>
+                                            <span class="input-suffix">ກີບ (LAK)</span>
+                                        </div>
+                                        <small class="text-muted">ຕົວຢ່າງ: 1 $ = 22,000 ₭ (ຍອດ 110,000 ກີບ = 5.00 $)</small>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Row 4: Interactive Live Test & Scan Area -->
-                            <div style="margin-top:14px; padding:14px; background:linear-gradient(180deg, #f0f7ff 0%, #fff 100%); border:1px solid #b3d4ff; border-radius:10px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-                                    <strong style="color:#0052cc; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
-                                        <i class="fas fa-vial"></i> ທົດສອບສ້າງ Dynamic QR & ສະແກນດ້ວຍມືຖືຕົວຈິງ
-                                    </strong>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <span style="font-size:0.8rem; color:#5e6c84;">ຍອດທົດສອບ:</span>
-                                        <input type="number" id="testQrAmountInput" value="10000" step="1000" style="width:110px; padding:4px 8px; font-size:0.85rem; border:1px solid #b3d4ff; border-radius:6px; font-weight:700; text-align:right;">
-                                        <span style="font-size:0.8rem; font-weight:700;">₭</span>
-                                        <button type="button" class="btn btn-sm btn-primary" onclick="triggerTestQrGeneration()" style="font-size:0.8rem; padding:4px 10px;">
-                                            <i class="fas fa-sync-alt"></i> ສ້າງ QR
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px;">
+                                <div class="card-header-flex" style="margin-bottom: 10px;">
+                                    <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-dark);">
+                                        <i class="fas fa-cash-register" style="color:var(--primary); margin-right:6px;"></i> ລະບົບລິ້ນຊັກເງິນ (Cash Drawer)
+                                    </h4>
+                                    <label class="switch-toggle" title="ເປີດ/ປິດ ເປີດລິ້ນຊັກເງິນອັດຕະໂນມັດ">
+                                        <input type="checkbox" name="enable_cash_drawer" id="inputEnableCashDrawer" value="1" <?= ($settings['enable_cash_drawer'] ?? 1) ? 'checked' : '' ?>>
+                                        <span class="slider-round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="form-row-2" style="align-items: center; gap: 20px;">
+                                    <div>
+                                        <p style="font-size: 13.5px; color: var(--text-dark); margin-bottom: 6px; font-weight: 600;">
+                                            ເປີດລິ້ນຊັກເງິນອັດຕະໂນມັດ ເມື່ອຂາຍເງິນສົດ (Auto Kick)
+                                        </p>
+                                        <p style="font-size: 12.5px; color: #5e6c84; margin-bottom: 0;">
+                                            ລິ້ນຊັກເງິນທີ່ຕໍ່ຜ່ານສາຍ RJ11 ເຂົ້າຊ່ອງ DK (Drawer Kick) ຫຼັງເຄື່ອງພິມໃບບິນ ຈະເປີດອອກເອງອັດຕະໂນມັດເມື່ອພິມບິນເງິນສົດ ຫຼື ກົດປຸ່ມລັດ <strong>F7</strong> ທີ່ໜ້າ POS.
+                                        </p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <button type="button" class="btn btn-outline" onclick="testCashDrawer()" style="min-height: 42px;">
+                                            <i class="fas fa-external-link-alt"></i> ທົດສອບເປີດລິ້ນຊັກ (Test Kick)
                                         </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-                                    <div id="testQrContainer" style="width:140px; height:140px; background:#fff; border:1px solid #d0e2ff; border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-                                        <span style="color:#8993a4; font-size:0.75rem;">ກົດປຸ່ມສ້າງ QR</span>
-                                    </div>
-                                    <div style="flex:1; min-width:240px;">
-                                        <div style="font-size:0.85rem; font-weight:700; color:#172b4d;" id="testQrDetails">
-                                            ທະນາຄານ: <span id="testQrBank">-</span> | ຍອດເງິນ: <span id="testQrAmount" style="color:#0052cc;">0 ₭</span>
-                                        </div>
-                                        <div style="font-size:0.8rem; color:#5e6c84; margin-top:2px;">
-                                            ບັນຊີ: <span id="testQrAccount">-</span> (<span id="testQrName">-</span>)
-                                        </div>
-                                        <div style="margin-top:6px; font-size:0.78rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; word-break:break-all; font-family:monospace; max-height:55px; overflow-y:auto;" id="testQrPayloadText">
-                                            ກົດປຸ່ມສ້າງ QR ເພື່ອເບິ່ງ Payload String
-                                        </div>
-                                        <div style="margin-top:6px; font-size:0.8rem; color:#059669; font-weight:600;" id="testQrStatus">
-                                            👉 ທ່ານສາມາດເປີດແອັບ <b>BCEL One</b> ໃນມືຖື ແລ້ວສະແກນ QR ນີ້ໄດ້ທັນທີ!
-                                        </div>
-                                    </div>
-                                </div>
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <label class="form-label" style="margin-bottom:0;">QR Code ຮັບເງິນ (ສຳລັບການໂອນ)</label>
-                                <button type="button" id="btnDelete_qr_code" class="btn-clear-upload" onclick="clearUpload('qr_code', event)" title="ລຶບ QR Code" style="<?= empty($settings['qr_code']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i> ລຶບ
-                                </button>
-                            </div>
-                            <input type="hidden" name="existing_qr_code" value="<?= $settings['qr_code'] ?? '' ?>">
-                            <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('qrCodeFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-                                <button type="button" id="floatDelete_qr_code" class="btn-remove-upload" onclick="clearUpload('qr_code', event)" title="ລຶບຮູບ" style="<?= empty($settings['qr_code']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                                <input type="file" id="qrCodeFileInput" name="qr_code" style="display:none;" accept="image/*" onchange="previewUpload(this, 'qrCodePreview')">
-                                <div class="upload-preview-container" id="qrCodePreview">
-                                    <?php if (!empty($settings['qr_code'])): ?>
-                                        <img src="assets/images/<?= $settings['qr_code'] ?>" alt="QR Code">
-                                    <?php else: ?>
-                                        <div class="upload-placeholder">
-                                            <i class="fas fa-qrcode"></i>
-                                            <span>ເລືອກຮູບ QR Code<br><small>ສຳລັບໃຫ້ລູກຄ້າສະແກນຈ່າຍ</small></span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                <label class="form-label" style="margin-bottom:0;">ສື່ໂຄສະນາ (CFD Media)</label>
-                                <button type="button" id="btnDelete_cfd_media" class="btn-clear-upload" onclick="clearUpload('cfd_media', event)" title="ລຶບສື່ໂຄສະນາ" style="<?= empty($settings['cfd_media']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i> ລຶບ
-                                </button>
-                            </div>
-                            <input type="hidden" name="existing_cfd_media" value="<?= $settings['cfd_media'] ?? '' ?>">
-                            <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('cfdMediaFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-                                <button type="button" id="floatDelete_cfd_media" class="btn-remove-upload" onclick="clearUpload('cfd_media', event)" title="ລຶບຮູບ" style="<?= empty($settings['cfd_media']) ? 'display:none;' : '' ?>">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                                <input type="file" id="cfdMediaFileInput" name="cfd_media" style="display:none;" accept="video/mp4,image/*" onchange="previewCFDMedia(this)">
-                                <div class="upload-preview-container" id="cfdMediaPreview">
-                                    <?php if (!empty($settings['cfd_media'])): ?>
-                                        <?php if(str_ends_with(strtolower($settings['cfd_media']), '.mp4')): ?>
-                                            <video src="assets/media/<?= $settings['cfd_media'] ?>" style="max-width:100%;max-height:100px;" muted></video>
-                                        <?php else: ?>
-                                            <img src="assets/media/<?= $settings['cfd_media'] ?>" alt="CFD Media">
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <div class="upload-placeholder">
-                                            <i class="fas fa-film"></i>
-                                            <span>ເລືອກຮູບ ຫຼື ວິດີໂອ MP4<br><small>ສຳລັບສະແດງໃນຈໍລູກຄ້າ</small></span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Bottom Save Action Bar -->
-                        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
-                            <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
-                                <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
-                            </button>
+                    <!-- Pane 4: Hardware & Thermal Printing -->
+                    <div id="settings-pane-hardware" class="settings-tab-pane" style="display:none;">
+                        <div class="card settings-form-card">
+                            <div class="card-header-flex" style="flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <h3 class="card-section-title" style="margin-bottom:4px;">
+                                        <i class="fas fa-print" style="color:var(--primary); margin-right:6px;"></i> ລະບົບເຊື່ອມຕໍ່ Hardware & ເຄື່ອງພິມ (QZ Tray / ESC/POS)
+                                    </h3>
+                                    <p style="font-size:12.5px; color:#5e6c84; margin-bottom:0;">
+                                        ຮອງຮັບການພິມໃບບິນອັດຕະໂນມັດ, ເຕະລິ້ນຊັກເກັບເງິນ (RJ11), ສະແກນບາໂຄ້ດ ແລະ ພິມສະຫຼາກຢາຜ່ານ QZ Tray Local Bridge
+                                    </p>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span id="qzStatusBadge" class="badge badge-secondary" style="font-size:12px; padding:6px 12px; font-weight:600;">
+                                        <i class="fas fa-circle-notch fa-spin"></i> ກວດສອບ QZ Tray...
+                                    </span>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="initHardwareSettingsUI(true)">
+                                        <i class="fas fa-sync-alt"></i> ເຊື່ອມຕໍ່ໃໝ່
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-top:16px;">
+                                <div class="form-row-3" style="gap:16px;">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label" style="font-weight:700;">
+                                            🧾 ເຄື່ອງພິມໃບບິນ (Receipt 80mm/58mm)
+                                        </label>
+                                        <select class="form-control" id="hwReceiptPrinter" onchange="saveHardwarePref('pos_receipt_printer', this.value)">
+                                            <option value="">-- ເລືອກເຄື່ອງພິມໃບບິນ --</option>
+                                        </select>
+                                        <small class="text-muted">ໃຊ້ສໍາລັບພິມໃບບິນຂາຍ ແລະ ສັ່ງເຕະລິ້ນຊັກເງິນ</small>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label" style="font-weight:700;">
+                                            🏷️ ເຄື່ອງພິມສະຫຼາກຢາ (Medicine Labels)
+                                        </label>
+                                        <select class="form-control" id="hwLabelPrinter" onchange="saveHardwarePref('pos_label_printer', this.value)">
+                                            <option value="">-- ເລືອກເຄື່ອງພິມສະຫຼາກຢາ --</option>
+                                        </select>
+                                        <small class="text-muted">ສະຕິກເກີ 8x5cm, 7x5cm, 5x3cm (Grozziie / Xprinter)</small>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label" style="font-weight:700;">
+                                            📊 ເຄື່ອງພິມບາໂຄ້ດ (Barcode Stickers)
+                                        </label>
+                                        <select class="form-control" id="hwBarcodePrinter" onchange="saveHardwarePref('pos_barcode_printer', this.value)">
+                                            <option value="">-- ເລືອກເຄື່ອງພິມບາໂຄ້ດ --</option>
+                                        </select>
+                                        <small class="text-muted">ໃຊ້ສຳລັບພິມບາໂຄ້ດຕິດສິນຄ້າໃນຄັງ</small>
+                                    </div>
+                                </div>
+
+                                <hr class="form-divider" style="margin: 16px 0;">
+
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                                    <div style="display:flex; align-items:center; gap:20px;">
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--text-dark); margin-bottom:0;">
+                                            <input type="checkbox" id="hwAutoPrintToggle" onchange="saveHardwarePref('pos_auto_print', this.checked ? 'true' : 'false')" style="width:17px; height:17px; accent-color:var(--primary);">
+                                            <span>ພິມໃບບິນອັດຕະໂນມັດ (Auto Print on Checkout)</span>
+                                        </label>
+                                    </div>
+
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintReceipt()">
+                                            <i class="fas fa-receipt"></i> ທົດສອບພິມໃບບິນ
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="testHardwarePrintLabel()">
+                                            <i class="fas fa-tag"></i> ທົດສອບພິມສະຫຼາກຢາ
+                                        </button>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="testCashDrawer()">
+                                            <i class="fas fa-cash-register"></i> ທົດສອບເຕະລິ້ນຊັກ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top:10px; font-size:12px; color:#5e6c84;">
+                                <i class="fas fa-info-circle"></i> ຖ້າໃຊ້ງານຜ່ານ Browser ແລ້ວສະຖານະຂຶ້ນວ່າ "ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່", ທ່ານສາມາດດາວໂຫຼດ ແລະ ເປີດໂປຣແກຣມ <a href="https://qz.io/download/" target="_blank" style="color:var(--primary); font-weight:600; text-decoration:underline;">QZ Tray (Free)</a> ຢູ່ເຄື່ອງຄອມພິວເຕີຂອງທ່ານເພື່ອໃຫ້ລະບົບພິມງຽບໂດຍບໍ່ຕ້ອງຜ່ານໜ້າຕ່າງ Preview.
+                            </div>
+
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Pane 5: Payment & CFD -->
+                    <div id="settings-pane-payment-cfd" class="settings-tab-pane" style="display:none;">
+                        <div class="card settings-form-card">
+                            <div class="card-header-flex">
+                                <div>
+                                    <h3 class="card-section-title"><i class="fas fa-qrcode" style="color:var(--primary); margin-right:6px;"></i> ການຊຳລະເງິນ OnePay & ໜ້າຈໍລູກຄ້າ (CFD)</h3>
+                                    <p style="font-size:12.5px; color:var(--text-medium); margin-top:2px;">ກຳນົດລະບົບ Dynamic LAO QR, ບັນຊີທະນາຄານ BCEL One ແລະ ສື່ໂຄສະນາ CFD</p>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <a href="<?= BASE_URL ?>customer_display.php" target="_blank" class="btn btn-outline">
+                                        <i class="fas fa-desktop"></i> ເປີດໜ້າຈໍລູກຄ້າ
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic LAO QR Box -->
+                            <div style="background:#f0f7ff; border:1px solid #cce0ff; border-radius:10px; padding:18px 20px; margin-bottom:20px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                    <div>
+                                        <h4 style="margin:0; font-size:1.05rem; font-weight:700; color:#0052cc; display:flex; align-items:center; gap:8px;">
+                                            <i class="fas fa-bolt" style="color:#ffab00;"></i> ລະບົບ Dynamic LAO QR ພ້ອມຝັງຍອດເງິນອັດຕະໂນມັດ (EMVCo)
+                                        </h4>
+                                        <p style="margin:4px 0 0 0; font-size:0.85rem; color:#5e6c84;">
+                                            ສ້າງ QR Code ທີ່ລະບຸຍອດເງິນພໍດີແຕ່ລະບິນ ລູກຄ້າສະແກນດ້ວຍແອັບ BCEL One ຫຼື ທະນາຄານອື່ນ ແລ້ວຍອດເງິນຂຶ້ນທັນທີ ໂດຍບໍ່ຕ້ອງພິມເອງ (100% Offline)
+                                        </p>
+                                    </div>
+                                    <label class="switch" style="margin-left:16px;">
+                                        <input type="checkbox" name="enable_dynamic_qr" id="inputEnableDynamicQr" value="1" <?= !empty($settings['enable_dynamic_qr']) ? 'checked' : '' ?> onchange="toggleDynamicQrFields()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div id="dynamicQrFieldsContainer" style="display:<?= !empty($settings['enable_dynamic_qr']) ? 'block' : 'none' ?>; margin-top:16px; border-top:1px dashed #b3d4ff; padding-top:14px;">
+                                    <div class="form-row-3" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px;">
+                                        <div class="form-group" style="margin-bottom:0;">
+                                            <label class="form-label" style="font-size:0.85rem; font-weight:600;">ທະນາຄານ / ແອັບ *</label>
+                                            <select class="form-control" name="bank_name" id="inputBankName">
+                                                <?php 
+                                                $currentBank = $settings['bank_name'] ?? 'BCEL One';
+                                                $banks = ['BCEL One', 'LDB Trust', 'JDB Yes', 'LaoVietBank', 'Hal-KB', 'Maruhan', 'Indochina Bank', 'ອື່ນໆ (LAPNet / Lao QR)'];
+                                                foreach ($banks as $b):
+                                                ?>
+                                                <option value="<?= $b ?>" <?= $currentBank === $b ? 'selected' : '' ?>><?= $b ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:0;">
+                                            <label class="form-label" style="font-size:0.85rem; font-weight:600;">ເລກບັນຊີ / ເລກໂທລະສັບຜູກບັນຊີ *</label>
+                                            <input type="text" class="form-control" name="bank_account_number" id="inputBankAccountNumber" value="<?= htmlspecialchars($settings['bank_account_number'] ?? '') ?>" placeholder="010120000998877 ຫຼື 020XXXXXXXX">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:0;">
+                                            <label class="form-label" style="font-size:0.85rem; font-weight:600;">ຊື່ບັນຊີ / ຊື່ຮ້ານຄ້າ *</label>
+                                            <input type="text" class="form-control" name="bank_account_name" id="inputBankAccountName" value="<?= htmlspecialchars($settings['bank_account_name'] ?? '') ?>" placeholder="ຊື່ເຈົ້າຂອງບັນຊີ...">
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: QR Mode & URI Scheme -->
+                                    <div class="form-row-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:14px;">
+                                        <div class="form-group" style="margin-bottom:0;">
+                                            <label class="form-label" style="font-size:0.85rem; font-weight:600;">ມາດຕະຖານ / ຮູບແບບ QR Code</label>
+                                            <select class="form-control" name="qr_mode" id="inputQrMode">
+                                                <option value="auto" <?= ($settings['qr_mode'] ?? 'auto') === 'auto' ? 'selected' : '' ?>>ອັດຕະໂນມັດ (BCEL One + LAPNet ປະສົມ - ແນະນຳ)</option>
+                                                <option value="bcel" <?= ($settings['qr_mode'] ?? '') === 'bcel' ? 'selected' : '' ?>>BCEL One / OnePay ເທົ່ານັ້ນ (Tag 33 & 26)</option>
+                                                <option value="lapnet" <?= ($settings['qr_mode'] ?? '') === 'lapnet' ? 'selected' : '' ?>>LAPNet / LAO QR ແຫ່ງຊາດ (ທຸກທະນາຄານ)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end;">
+                                            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; margin-bottom:10px;">
+                                                <input type="checkbox" name="qr_uri_scheme" id="inputQrUriScheme" value="1" <?= !empty($settings['qr_uri_scheme']) ? 'checked' : '' ?>>
+                                                <span>ຝັງຮູບແບບ <code>onepay://qr/</code> ສຳລັບແອັບ BCEL One</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 3: Raw Static QR Payload (Optional - Recommended for 100% genuine BCEL One) -->
+                                    <div style="margin-top:14px; padding:12px; background:#fff; border:1px solid #cce0ff; border-radius:8px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                            <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0052cc; margin-bottom:0;">
+                                                <i class="fas fa-qrcode"></i> ລະຫັດ QR Code ຕົ້ນສະບັບຂອງຮ້ານ (Raw Static QR Payload - ທາງເລືອກແນະນຳ)
+                                            </label>
+                                            <button type="button" class="btn btn-sm btn-outline" onclick="validateStaticQrPayload()" style="font-size:0.78rem; padding:3px 8px;">
+                                                <i class="fas fa-search"></i> ກວດສອບລະຫັດ QR
+                                            </button>
+                                        </div>
+                                        <p style="font-size:0.78rem; color:#5e6c84; margin-bottom:6px;">
+                                            ຖ້າທ່ານມີ QR Code ຈາກແອັບ BCEL One (My QR ຫຼື OnePay) ສາມາດກັອບປີ້ຂໍ້ຄວາມ ຫຼື ສະແກນເອົາລະຫັດມາໃສ່ບ່ອນນີ້. ລະບົບຈະນຳໃຊ້ລະຫັດຮ້ານຄ້າຕົວຈິງຂອງທ່ານໄປຝັງຍອດເງິນອັດຕະໂນມັດ 100%:
+                                        </p>
+                                        <textarea class="form-control" name="qr_payload" id="inputQrPayload" rows="2" style="font-family:monospace; font-size:0.8rem;" placeholder="ຕົວຢ່າງ: 000201010211... ຫຼື onepay://qr/000201..."><?= htmlspecialchars($settings['qr_payload'] ?? '') ?></textarea>
+                                        <div id="qrPayloadFeedback" style="display:none; margin-top:6px; font-size:0.82rem; padding:6px 10px; border-radius:6px;"></div>
+                                    </div>
+
+                                    <!-- Row 4: Interactive Live Test & Scan Area -->
+                                    <div style="margin-top:14px; padding:14px; background:linear-gradient(180deg, #f0f7ff 0%, #fff 100%); border:1px solid #b3d4ff; border-radius:10px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                                            <strong style="color:#0052cc; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
+                                                <i class="fas fa-vial"></i> ທົດສອບສ້າງ Dynamic QR & ສະແກນດ້ວຍມືຖືຕົວຈິງ
+                                            </strong>
+                                            <div style="display:flex; align-items:center; gap:6px;">
+                                                <span style="font-size:0.8rem; color:#5e6c84;">ຍອດທົດສອບ:</span>
+                                                <input type="number" id="testQrAmountInput" value="10000" step="1000" style="width:110px; padding:4px 8px; font-size:0.85rem; border:1px solid #b3d4ff; border-radius:6px; font-weight:700; text-align:right;">
+                                                <span style="font-size:0.8rem; font-weight:700;">₭</span>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="triggerTestQrGeneration()" style="font-size:0.8rem; padding:4px 10px;">
+                                                    <i class="fas fa-sync-alt"></i> ສ້າງ QR
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                                            <div id="testQrContainer" style="width:140px; height:140px; background:#fff; border:1px solid #d0e2ff; border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                                                <span style="color:#8993a4; font-size:0.75rem;">ກົດປຸ່ມສ້າງ QR</span>
+                                            </div>
+                                            <div style="flex:1; min-width:240px;">
+                                                <div style="font-size:0.85rem; font-weight:700; color:#172b4d;" id="testQrDetails">
+                                                    ທະນາຄານ: <span id="testQrBank">-</span> | ຍອດເງິນ: <span id="testQrAmount" style="color:#0052cc;">0 ₭</span>
+                                                </div>
+                                                <div style="font-size:0.8rem; color:#5e6c84; margin-top:2px;">
+                                                    ບັນຊີ: <span id="testQrAccount">-</span> (<span id="testQrName">-</span>)
+                                                </div>
+                                                <div style="margin-top:6px; font-size:0.78rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; word-break:break-all; font-family:monospace; max-height:55px; overflow-y:auto;" id="testQrPayloadText">
+                                                    ກົດປຸ່ມສ້າງ QR ເພື່ອເບິ່ງ Payload String
+                                                </div>
+                                                <div style="margin-top:6px; font-size:0.8rem; color:#059669; font-weight:600;" id="testQrStatus">
+                                                    👉 ທ່ານສາມາດເປີດແອັບ <b>BCEL One</b> ໃນມືຖື ແລ້ວສະແກນ QR ນີ້ໄດ້ທັນທີ!
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                        <label class="form-label" style="margin-bottom:0;">QR Code ຮັບເງິນ (ສຳລັບການໂອນ)</label>
+                                        <button type="button" id="btnDelete_qr_code" class="btn-clear-upload" onclick="clearUpload('qr_code', event)" title="ລຶບ QR Code" style="<?= empty($settings['qr_code']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i> ລຶບ
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="existing_qr_code" value="<?= $settings['qr_code'] ?? '' ?>">
+                                    <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('qrCodeFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+                                        <button type="button" id="floatDelete_qr_code" class="btn-remove-upload" onclick="clearUpload('qr_code', event)" title="ລຶບຮູບ" style="<?= empty($settings['qr_code']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <input type="file" id="qrCodeFileInput" name="qr_code" style="display:none;" accept="image/*" onchange="previewUpload(this, 'qrCodePreview')">
+                                        <div class="upload-preview-container" id="qrCodePreview">
+                                            <?php if (!empty($settings['qr_code'])): ?>
+                                                <img src="assets/images/<?= $settings['qr_code'] ?>" alt="QR Code">
+                                            <?php else: ?>
+                                                <div class="upload-placeholder">
+                                                    <i class="fas fa-qrcode"></i>
+                                                    <span>ເລືອກຮູບ QR Code<br><small>ສຳລັບໃຫ້ລູກຄ້າສະແກນຈ່າຍ</small></span>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                        <label class="form-label" style="margin-bottom:0;">ສື່ໂຄສະນາ (CFD Media)</label>
+                                        <button type="button" id="btnDelete_cfd_media" class="btn-clear-upload" onclick="clearUpload('cfd_media', event)" title="ລຶບສື່ໂຄສະນາ" style="<?= empty($settings['cfd_media']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i> ລຶບ
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="existing_cfd_media" value="<?= $settings['cfd_media'] ?? '' ?>">
+                                    <div class="upload-zone position-relative" tabindex="0" role="button" onclick="document.getElementById('cfdMediaFileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+                                        <button type="button" id="floatDelete_cfd_media" class="btn-remove-upload" onclick="clearUpload('cfd_media', event)" title="ລຶບຮູບ" style="<?= empty($settings['cfd_media']) ? 'display:none;' : '' ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <input type="file" id="cfdMediaFileInput" name="cfd_media" style="display:none;" accept="video/mp4,image/*" onchange="previewCFDMedia(this)">
+                                        <div class="upload-preview-container" id="cfdMediaPreview">
+                                            <?php if (!empty($settings['cfd_media'])): ?>
+                                                <?php if(str_ends_with(strtolower($settings['cfd_media']), '.mp4')): ?>
+                                                    <video src="assets/media/<?= $settings['cfd_media'] ?>" style="max-width:100%;max-height:100px;" muted></video>
+                                                <?php else: ?>
+                                                    <img src="assets/media/<?= $settings['cfd_media'] ?>" alt="CFD Media">
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <div class="upload-placeholder">
+                                                    <i class="fas fa-film"></i>
+                                                    <span>ເລືອກຮູບ ຫຼື ວິດີໂອ MP4<br><small>ສຳລັບສະແດງໃນຈໍລູກຄ້າ</small></span>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Save Action Bar -->
+                            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary" style="min-width: 160px; min-height: 44px;">
+                                    <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End settings-left-col -->
 
                 <!-- Right: Preview Card -->
                 <div class="card settings-preview-card">
@@ -859,7 +980,39 @@ include 'includes/sidebar.php';
 </main>
 
 <script>
+const SETTINGS_TABS = ['general', 'tax', 'currency-drawer', 'hardware', 'payment-cfd'];
+
+function switchSettingsTab(tabName) {
+    if (!SETTINGS_TABS.includes(tabName)) tabName = 'general';
+    
+    // Hide all panes & deactivate all buttons
+    SETTINGS_TABS.forEach(t => {
+        const pane = document.getElementById('settings-pane-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (pane) pane.style.display = (t === tabName) ? 'block' : 'none';
+        if (btn) {
+            if (t === tabName) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+    });
+
+    try {
+        localStorage.setItem('pos_active_settings_tab', tabName);
+    } catch(e) {}
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    // Restore saved settings tab if exists
+    try {
+        const savedTab = localStorage.getItem('pos_active_settings_tab');
+        if (savedTab && SETTINGS_TABS.includes(savedTab)) {
+            switchSettingsTab(savedTab);
+        }
+    } catch(e) {}
+
     // Initial call to load live values from inputs into receipt preview
     updateReceiptPreview();
 });
