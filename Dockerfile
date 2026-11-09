@@ -33,6 +33,10 @@ WORKDIR /var/www/html
 # Copy source code into container
 COPY . /var/www/html/
 
+# Copy entrypoint script and set permissions
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Set proper permissions for web server and uploads
 RUN mkdir -p /var/www/html/logs /var/www/html/assets/images \
     && chown -R www-data:www-data /var/www/html \
@@ -42,6 +46,4 @@ RUN mkdir -p /var/www/html/logs /var/www/html/assets/images \
 # Expose port 80
 EXPOSE 80
 
-# Support dynamic PORT environment variable (Railway / Render)
-CMD ["sh", "-c", "sed -i \"s/80/${PORT:-80}/g\" /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf && apache2-foreground"]
-
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
