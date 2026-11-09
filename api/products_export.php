@@ -87,6 +87,6 @@ try {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'message' => safeErrorMessage($e)]);
     } else {
-        echo "ເກີດຂໍ້ຜິດພາດໃນການສົ່ງອອກ: " . htmlspecialchars($e->getMessage());
+        echo "ເກີດຂໍ້ຜິດພາດໃນການສົ່ງອອກ: " . htmlspecialchars(safeErrorMessage($e));
     }
 }

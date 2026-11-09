@@ -418,9 +418,10 @@ include 'includes/sidebar.php';
                         <a href="sales_history.php" style="font-size:0.78rem; color:var(--primary); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">ເບິ່ງທັງໝົດ <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i></a>
                     </div>
                     <?php if (empty($recentSales)): ?>
-                    <div class="empty-state" style="padding:30px;">
-                        <i class="fas fa-receipt"></i>
-                        <p>ບໍ່ມີລາຍການຂາຍລ່າສຸດ</p>
+                    <div class="empty-state" style="padding:30px; text-align:center;">
+                        <i class="fas fa-receipt" style="font-size: 2.2rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+                        <p style="color: var(--text-medium); margin-bottom: 12px;">ບໍ່ມີລາຍການຂາຍລ່າສຸດ</p>
+                        <a href="pos.php" class="btn btn-primary btn-sm"><i class="fas fa-cash-register"></i> ເປີດໜ້າຂາຍ (POS)</a>
                     </div>
                     <?php else: ?>
                     <div class="table-responsive">

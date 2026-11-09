@@ -80,9 +80,20 @@ $taxInvNo = !empty($sale['tax_invoice_number']) ? $sale['tax_invoice_number'] : 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ໃບກຳກັບພາສີ - <?= htmlspecialchars($taxInvNo) ?></title>
-    <link rel="stylesheet" href="assets/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <meta name="description" content="ໃບກຳກັບພາສີ / ໃບຮັບເງິນອາກອນມູນຄ່າເພີ່ມ (Official Tax Invoice) - <?= htmlspecialchars($companyName) ?> ເລກທີ <?= htmlspecialchars($taxInvNo) ?>">
+    <title>ໃບກຳກັບພາສີ - <?= htmlspecialchars($taxInvNo) ?> | <?= htmlspecialchars($companyName) ?></title>
+    
+    <?php if (!empty($settings['favicon']) && file_exists(__DIR__ . '/assets/images/' . $settings['favicon'])): ?>
+        <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/images/<?= htmlspecialchars($settings['favicon']) ?>">
+    <?php elseif (!empty($settings['logo']) && file_exists(__DIR__ . '/assets/images/' . $settings['logo'])): ?>
+        <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/images/<?= htmlspecialchars($settings['logo']) ?>">
+    <?php else: ?>
+        <link rel="icon" type="image/png" href="<?= BASE_URL ?>assets/images/favicon.png">
+    <?php endif; ?>
+
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/vendor/fonts/noto-sans-lao.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
     <style>
         @page {
             size: <?= $paperSize === 'a5' ? 'A5 landscape' : 'A4 portrait' ?>;

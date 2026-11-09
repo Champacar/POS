@@ -422,5 +422,5 @@ try {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    echo json_encode(['success' => false, 'message' => 'ເກີດຂໍ້ຜິດພາດ: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => safeErrorMessage($e)]);
 }

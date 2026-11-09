@@ -187,9 +187,10 @@ include 'includes/sidebar.php';
                         <a href="expenses.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> ບັນທຶກລາຍຈ່າຍ</a>
                     </div>
                     <?php if (empty($recentExpenses)): ?>
-                    <div class="empty-state" style="padding:30px;">
-                        <i class="fas fa-search"></i>
-                        <p>ບໍ່ມີຂໍ້ມູນລາຍຈ່າຍ</p>
+                    <div class="empty-state" style="padding:30px; text-align:center;">
+                        <i class="fas fa-wallet" style="font-size: 2rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+                        <p style="color: var(--text-medium); margin-bottom: 10px;">ບໍ່ມີຂໍ້ມູນລາຍຈ່າຍໃນຊ່ວງເວລານີ້</p>
+                        <a href="expenses.php" class="btn btn-outline btn-sm"><i class="fas fa-plus"></i> ບັນທຶກລາຍຈ່າຍ</a>
                     </div>
                     <?php else: ?>
                     <div class="table-responsive">
@@ -213,9 +214,10 @@ include 'includes/sidebar.php';
                 <div class="card animate-in">
                     <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">ການນຳເຂົ້າຢາ</h3>
                     <?php if (empty($recentImports)): ?>
-                    <div class="empty-state" style="padding:20px;">
-                        <i class="fas fa-search"></i>
-                        <p>ບໍ່ມີຂໍ້ມູນການນຳເຂົ້າ</p>
+                    <div class="empty-state" style="padding:25px; text-align:center;">
+                        <i class="fas fa-boxes" style="font-size: 2rem; color: var(--text-light); margin-bottom: 8px; display: block;"></i>
+                        <p style="color: var(--text-medium); margin-bottom: 10px;">ບໍ່ມີຂໍ້ມູນການນຳເຂົ້າຢາໃນຊ່ວງເວລານີ້</p>
+                        <a href="inventory.php" class="btn btn-outline btn-sm"><i class="fas fa-plus"></i> ໄປໜ້າຮັບຢາເຂົ້າສາງ</a>
                     </div>
                     <?php else: ?>
                     <div class="table-responsive">

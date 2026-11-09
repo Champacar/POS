@@ -229,5 +229,5 @@ try {
 
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'ເກີດຂໍ້ຜິດພາດ: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => safeErrorMessage($e)]);
 }

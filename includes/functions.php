@@ -384,11 +384,23 @@ function getRoleBadgeClass($role) {
  * Safe error message for API responses (hide details in production)
  */
 function safeErrorMessage($exception) {
-    if (APP_ENV === 'development') {
-        return $exception->getMessage();
+    $msg = $exception instanceof Throwable ? $exception->getMessage() : (string)$exception;
+    $file = $exception instanceof Throwable ? $exception->getFile() : '';
+    $line = $exception instanceof Throwable ? $exception->getLine() : '';
+    
+    error_log("System Error: {$msg} in {$file}:{$line}");
+
+    $isDev = defined('APP_ENV') && APP_ENV === 'development';
+    if ($isDev) {
+        return $msg;
     }
-    error_log("Error: " . $exception->getMessage() . " in " . $exception->getFile() . ":" . $exception->getLine());
-    return 'ເກີດຂໍ້ຜິດພາດ. ກະລຸນາລອງໃໝ່ ຫຼື ຕິດຕໍ່ຜູ້ດູແລລະບົບ.';
+
+    // Mask database/SQL technical errors from regular cashiers/pharmacists
+    if (stripos($msg, 'SQLSTATE') !== false || stripos($msg, 'doesn\'t exist') !== false || stripos($msg, 'Unknown column') !== false) {
+        return 'ເກີດຂໍ້ຜິດພາດໃນລະບົບຖານຂໍ້ມູນ. ກະລຸນາຣີເຟຣຊໜ້າເວັບ ຫຼື ຕິດຕໍ່ຜູ້ດູແລລະບົບ.';
+    }
+
+    return 'ເກີດຂໍ້ຜິດພາດໃນລະບົບ. ກະລຸນາລອງໃໝ່ ຫຼື ຕິດຕໍ່ຜູ້ດູແລລະບົບ.';
 }
 
 /**
