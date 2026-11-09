@@ -54,6 +54,7 @@ try {
                     $input['expense_date'] ?? date('Y-m-d'),
                     $input['id']
                 ]);
+                logActivity('expense_edit', "ແກ້ໄຂລາຍຈ່າຍ ID {$input['id']}: {$input['title']} (ຈຳນວນ: " . number_format((float)$input['amount']) . " ກີບ)", 'expense', ['id' => $input['id'], 'amount' => $input['amount']]);
                 echo json_encode(['success' => true, 'message' => 'ແກ້ໄຂລາຍຈ່າຍສຳເລັດ']);
             } else {
                 $uuid = uniqid('EXP-', true);
@@ -67,7 +68,9 @@ try {
                     getCurrentUserId(),
                     $uuid
                 ]);
-                echo json_encode(['success' => true, 'message' => 'ບັນທຶກລາຍຈ່າຍສຳເລັດ', 'id' => $db->lastInsertId()]);
+                $newExpId = $db->lastInsertId();
+                logActivity('expense_add', "ບັນທຶກລາຍຈ່າຍໃໝ່ ID {$newExpId}: {$input['title']} (ຈຳນວນ: " . number_format((float)$input['amount']) . " ກີບ)", 'expense', ['id' => $newExpId, 'amount' => $input['amount']]);
+                echo json_encode(['success' => true, 'message' => 'ບັນທຶກລາຍຈ່າຍສຳເລັດ', 'id' => $newExpId]);
             }
             break;
             
@@ -79,6 +82,7 @@ try {
             }
             
             $db->prepare("DELETE FROM expenses WHERE id = ?")->execute([$id]);
+            logActivity('expense_delete', "ລຶບລາຍຈ່າຍ ID {$id}", 'expense', ['id' => $id]);
             echo json_encode(['success' => true, 'message' => 'ລຶບລາຍຈ່າຍສຳເລັດ']);
             break;
     }

@@ -95,6 +95,12 @@ try {
         $stmtInsert->execute([$shiftNumber, $userId, $startingCash, $note]);
         $shiftId = $db->lastInsertId();
 
+        logActivity('shift_open', "ເປີດກະຂາຍໃໝ່ {$shiftNumber} (ເງິນທອນຕັ້ງຕົ້ນ: " . number_format($startingCash) . " ກີບ)", 'shift', [
+            'shift_id' => $shiftId,
+            'shift_number' => $shiftNumber,
+            'starting_cash' => $startingCash
+        ]);
+
         echo json_encode([
             'success' => true,
             'message' => 'ເປີດກະຂາຍສຳເລັດ!',
@@ -196,6 +202,14 @@ try {
             $differenceLak,
             $note,
             $shiftId
+        ]);
+
+        logActivity('shift_close', "ປິດກະຂາຍ {$shift['shift_number']} (ຍອດນັບ: " . number_format($cashCountedLak) . " ກີບ, ຜົນຕ່າງ: " . number_format($differenceLak) . " ກີບ, ຍອດຂາຍ: " . number_format($totalSales) . " ກີບ)", 'shift', [
+            'shift_id' => $shiftId,
+            'shift_number' => $shift['shift_number'],
+            'total_sales' => $totalSales,
+            'counted_cash' => $cashCountedLak,
+            'difference' => $differenceLak
         ]);
 
         echo json_encode([

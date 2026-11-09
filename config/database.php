@@ -202,6 +202,20 @@ function getDB() {
                     if (!empty($saleCols) && !in_array('synced', $saleCols, true)) {
                         $pdo->exec("ALTER TABLE sales ADD COLUMN synced INTEGER NOT NULL DEFAULT 0");
                     }
+
+                    // Auto-create user_activity_logs in SQLite
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS user_activity_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NULL,
+                        username TEXT NULL,
+                        action TEXT NOT NULL,
+                        category TEXT NOT NULL DEFAULT 'general',
+                        description TEXT NOT NULL,
+                        details TEXT NULL,
+                        ip_address TEXT NULL,
+                        user_agent TEXT NULL,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )");
                 }
             } else {
                 $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
@@ -364,6 +378,27 @@ function getDB() {
                                 }
                             }
                         }
+                    }
+
+                    // 9. Auto-create user_activity_logs if missing
+                    $hasActivityLogs = $pdo->query("SHOW TABLES LIKE 'user_activity_logs'")->fetch();
+                    if (!$hasActivityLogs) {
+                        $pdo->exec("CREATE TABLE IF NOT EXISTS `user_activity_logs` (
+                          `id` INT AUTO_INCREMENT PRIMARY KEY,
+                          `user_id` INT NULL,
+                          `username` VARCHAR(100) NULL,
+                          `action` VARCHAR(50) NOT NULL,
+                          `category` VARCHAR(50) NOT NULL DEFAULT 'general',
+                          `description` TEXT NOT NULL,
+                          `details` TEXT NULL,
+                          `ip_address` VARCHAR(45) NULL,
+                          `user_agent` VARCHAR(500) NULL,
+                          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          INDEX `idx_activity_user` (`user_id`),
+                          INDEX `idx_activity_action` (`action`),
+                          INDEX `idx_activity_category` (`category`),
+                          INDEX `idx_activity_created` (`created_at`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
                     }
                 } catch (Throwable $migrationErr) {
                     error_log("MySQL Auto-migration note: " . $migrationErr->getMessage());

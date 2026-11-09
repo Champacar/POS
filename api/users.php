@@ -130,6 +130,7 @@ try {
                     }
                 }
 
+                logActivity('user_edit', "ແກ້ໄຂຂໍ້ມູນພະນັກງານ ID {$id}: {$input['username']} ({$input['full_name']})", 'settings', ['target_id' => $id, 'role' => $role]);
                 echo json_encode(['success' => true, 'message' => 'ແກ້ໄຂຂໍ້ມູນພະນັກງານສຳເລັດ']);
             } else {
                 // Insert
@@ -157,7 +158,9 @@ try {
                     $input['phone'] ?? null,
                     $input['is_active'] ?? 1
                 ]);
-                echo json_encode(['success' => true, 'message' => 'ເພີ່ມພະນັກງານສຳເລັດ', 'id' => $db->lastInsertId()]);
+                $newUserId = $db->lastInsertId();
+                logActivity('user_add', "ເພີ່ມພະນັກງານໃໝ່ ID {$newUserId}: {$input['username']} ({$input['full_name']}) ບົດບາດ: {$role}", 'settings', ['new_user_id' => $newUserId, 'role' => $role]);
+                echo json_encode(['success' => true, 'message' => 'ເພີ່ມພະນັກງານສຳເລັດ', 'id' => $newUserId]);
             }
             break;
             
@@ -183,6 +186,7 @@ try {
             }
             
             $db->prepare("DELETE FROM users WHERE id = ?")->execute([$id]);
+            logActivity('user_delete', "ລຶບພະນັກງານ ID {$id}", 'settings', ['target_id' => $id]);
             echo json_encode(['success' => true, 'message' => 'ລຶບພະນັກງານສຳເລັດ']);
             break;
     }

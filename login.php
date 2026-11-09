@@ -75,14 +75,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         $_SESSION['permissions'] = $userPerms;
                         
+                        logActivity('login_success', 'ເຂົ້າສູ່ລະບົບສຳເລັດ', 'auth', [
+                            'role' => $user['role'],
+                            'full_name' => $user['full_name']
+                        ], $user['id'], $user['username']);
+                        
                         header('Location: ' . BASE_URL . ($user['role'] === 'cashier' ? 'pos.php' : 'index.php'));
                         exit;
                     } else {
+                        logActivity('login_suspended', 'ພະຍາຍາມເຂົ້າສູ່ລະບົບດ້ວຍບັນຊີທີ່ຖືກລະງັບ', 'auth', [
+                            'username' => $username
+                        ], $user['id'], $user['username']);
                         $error = 'ບັນຊີຂອງທ່ານຖືກລະງັບການນຳໃຊ້';
                     }
                 } else {
                     // Record failed attempt
                     recordFailedAttempt('login_' . $username);
+                    logActivity('login_failed', "ພະຍາຍາມເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ (ຊື່ຜູ້ໃຊ້: {$username})", 'auth', [
+                        'username' => $username,
+                        'reason' => 'Invalid credentials'
+                    ], null, $username);
                     $error = 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ';
                 }
             } catch (Exception $e) {

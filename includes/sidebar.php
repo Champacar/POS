@@ -165,6 +165,12 @@ try {
                 <span>ສຳຮອງຂໍ້ມູນ (Backup)</span>
             </a>
         </div>
+        <div class="nav-item">
+            <a href="<?= BASE_URL ?>activity_logs.php" class="nav-link <?= isActivePage('activity_logs') ?>" title="ປະຫວັດການໃຊ້ງານ (Activity Logs)">
+                <i class="fas fa-user-clock"></i>
+                <span>ປະຫວັດການໃຊ້ງານ</span>
+            </a>
+        </div>
         <?php endif; ?>
         <div class="nav-item">
             <a href="<?= BASE_URL ?>notifications.php" class="nav-link <?= isActivePage('notifications') ?>" title="ແຈ້ງເຕືອນ">

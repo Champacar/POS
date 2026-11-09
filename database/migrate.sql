@@ -226,3 +226,21 @@ CREATE INDEX IF NOT EXISTS `idx_sales_status_date` ON `sales` (`payment_status`,
 CREATE INDEX IF NOT EXISTS `idx_expenses_date` ON `expenses` (`expense_date`);
 CREATE INDEX IF NOT EXISTS `idx_products_active_category` ON `products` (`is_active`, `category_id`);
 CREATE INDEX IF NOT EXISTS `idx_products_barcode` ON `products` (`barcode`);
+
+-- 16. User Activity Logs (Audit Trail)
+CREATE TABLE IF NOT EXISTS `user_activity_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NULL,
+  `username` VARCHAR(100) NULL,
+  `action` VARCHAR(50) NOT NULL,
+  `category` VARCHAR(50) NOT NULL DEFAULT 'general',
+  `description` TEXT NOT NULL,
+  `details` TEXT NULL,
+  `ip_address` VARCHAR(45) NULL,
+  `user_agent` VARCHAR(500) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_activity_user` (`user_id`),
+  INDEX `idx_activity_action` (`action`),
+  INDEX `idx_activity_category` (`category`),
+  INDEX `idx_activity_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

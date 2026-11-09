@@ -6,6 +6,10 @@
 
 require_once 'includes/functions.php';
 
+if (isLoggedIn()) {
+    logActivity('logout', 'ອອກຈາກລະບົບ', 'auth');
+}
+
 // Unset all session variables
 $_SESSION = array();
 

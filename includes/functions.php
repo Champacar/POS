@@ -404,6 +404,52 @@ function safeErrorMessage($exception) {
 }
 
 /**
+ * Log user activity / audit trail
+ *
+ * @param string $action Action key (e.g. 'login', 'logout', 'sale_created', 'product_add')
+ * @param string $description Human-readable description in Lao
+ * @param string $category Action category: 'auth', 'sales', 'shift', 'inventory', 'expense', 'settings'
+ * @param array|string|null $details Optional structured details or metadata
+ * @param int|null $userId Optional user ID (defaults to $_SESSION['user_id'])
+ * @param string|null $username Optional username (defaults to $_SESSION['username'])
+ * @return bool True if logged successfully
+ */
+function logActivity($action, $description, $category = 'general', $details = null, $userId = null, $username = null) {
+    try {
+        $db = getDB();
+        if ($userId === null && isset($_SESSION['user_id'])) {
+            $userId = (int)$_SESSION['user_id'];
+        }
+        if ($username === null && isset($_SESSION['username'])) {
+            $username = $_SESSION['username'];
+        }
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        if (strpos($ip, ',') !== false) {
+            $ip = trim(explode(',', $ip)[0]);
+        }
+        $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500);
+        $detailsJson = is_array($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : $details;
+
+        $stmt = $db->prepare("INSERT INTO user_activity_logs (user_id, username, action, category, description, details, ip_address, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $userId,
+            $username,
+            $action,
+            $category,
+            $description,
+            $detailsJson,
+            $ip,
+            $userAgent,
+            date('Y-m-d H:i:s')
+        ]);
+        return true;
+    } catch (Throwable $e) {
+        error_log("Failed to log user activity: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Validate integer input
  */
 function validateInt($value, $min = null, $max = null) {

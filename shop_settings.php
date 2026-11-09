@@ -167,6 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $qrUriScheme
         ]);
         
+        logActivity('settings_update', "ອັບເດດຂໍ້ມູນ ແລະ ການຕັ້ງຄ່າຮ້ານຄ້າ: {$shopName}", 'settings');
+
         $message = 'ບັນທຶກການຕັ້ງຄ່າສຳເລັດ!';
         $messageType = 'success';
     } catch (Exception $e) {

@@ -286,6 +286,15 @@ try {
             
             $db->commit();
             
+            // Log user activity
+            logActivity('sale_create', "ຂາຍສິນຄ້າໃໝ່ ເລກບິນ {$invoiceNumber} (ຍອດລວມ: " . number_format($totalAmount) . " ກີບ, ຮູບແບບ: {$paymentMethod})", 'sales', [
+                'sale_id' => $saleId,
+                'invoice_number' => $invoiceNumber,
+                'total_amount' => $totalAmount,
+                'payment_method' => $paymentMethod,
+                'items_count' => count($input['items'] ?? [])
+            ]);
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'ບັນທຶກການຂາຍສຳເລັດ',
@@ -321,10 +330,21 @@ try {
                 }
             }
             
+            // Get invoice info before cancelling
+            $saleStmt = $db->prepare("SELECT invoice_number, total_amount FROM sales WHERE id = ?");
+            $saleStmt->execute([$id]);
+            $saleRecord = $saleStmt->fetch();
+
             // Mark as cancelled
             $db->prepare("UPDATE sales SET payment_status = 'cancelled', synced = 0 WHERE id = ?")->execute([$id]);
             
             $db->commit();
+            
+            // Log user activity
+            logActivity('sale_cancel', "ຍົກເລີກບິນການຂາຍ " . ($saleRecord['invoice_number'] ?? "ID: {$id}") . " (ຍອດ: " . number_format($saleRecord['total_amount'] ?? 0) . " ກີບ)", 'sales', [
+                'sale_id' => $id,
+                'invoice_number' => $saleRecord['invoice_number'] ?? null
+            ]);
             
             echo json_encode(['success' => true, 'message' => 'ຍົກເລີກການຂາຍສຳເລັດ']);
             break;

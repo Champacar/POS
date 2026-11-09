@@ -193,6 +193,7 @@ try {
                     $productId,
                 ]);
                 
+                logActivity('product_edit', "ແກ້ໄຂຂໍ້ມູນຢາ ID {$productId}: {$input['name']}", 'inventory', ['product_id' => $productId]);
                 echo json_encode(['success' => true, 'message' => 'ແກ້ໄຂສິນຄ້າສຳເລັດ', 'image' => $imageName]);
                 break;
             }
@@ -219,7 +220,14 @@ try {
                 $imageName,
             ]);
             
-            echo json_encode(['success' => true, 'message' => 'ເພີ່ມສິນຄ້າສຳເລັດ', 'id' => $db->lastInsertId(), 'image' => $imageName]);
+            $newProdId = $db->lastInsertId();
+            logActivity('product_add', "ເພີ່ມຢາໃໝ່ ID {$newProdId}: {$input['name']}", 'inventory', [
+                'product_id' => $newProdId,
+                'barcode' => $input['barcode'] ?? null,
+                'selling_price' => $input['selling_price'] ?? 0
+            ]);
+
+            echo json_encode(['success' => true, 'message' => 'ເພີ່ມສິນຄ້າສຳເລັດ', 'id' => $newProdId, 'image' => $imageName]);
             break;
             
         case 'PUT':
@@ -264,6 +272,12 @@ try {
                 
                 $db->commit();
                 
+                logActivity('stock_in', "ຮັບຢາເຂົ້າສາງ: ID {$productId} ຈຳນວນ +{$quantity}" . (!empty($input['batch_number']) ? " (Lot: {$input['batch_number']})" : ""), 'inventory', [
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'batch_number' => $input['batch_number'] ?? null
+                ]);
+
                 echo json_encode(['success' => true, 'message' => 'ນຳເຂົ້າສິນຄ້າສຳເລັດ']);
             } else if (isset($input['action']) && $input['action'] === 'stock_out') {
                 // Stock out (Deduct/Adjust stock)
@@ -292,6 +306,12 @@ try {
                 
                 $db->commit();
                 
+                logActivity('stock_out', "ຕັດສະຕ໋ອກຢາ: ID {$productId} ຈຳນວນ -{$quantity}" . (!empty($input['note']) ? " ({$input['note']})" : ""), 'inventory', [
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'note' => $input['note'] ?? null
+                ]);
+
                 echo json_encode(['success' => true, 'message' => 'ຕັດສະຕ໋ອກອອກສຳເລັດ']);
             } else {
                 // Update product
@@ -329,6 +349,7 @@ try {
             }
             
             $db->prepare("UPDATE products SET is_active = 0 WHERE id = ?")->execute([$id]);
+            logActivity('product_delete', "ລຶບຢາ ID {$id} ອອກຈາກລະບົບ", 'inventory', ['product_id' => $id]);
             echo json_encode(['success' => true, 'message' => 'ລຶບສິນຄ້າສຳເລັດ']);
             break;
     }
